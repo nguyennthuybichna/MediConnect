@@ -178,34 +178,241 @@ def run_mediconnect_simulation(message: str, history: List[ChatMessage]):
                 "Bạn có tiền sử bệnh lý gì đặc biệt hoặc đang sử dụng thuốc nào gần đây không?"
             )
         }
-    else:
-        # Ở lượt thứ 5+, đưa ra kết luận dự đoán
-        predicted_disease = 'Cảm lạnh chung (Common Cold)'
-        confidence = 85
+# Từ điển triệu chứng chuyên khoa chi tiết cho 24 bệnh lý (hỗ trợ cả tiếng Việt và tiếng Anh)
+DISEASE_KNOWLEDGE_BASE = {
+    "Mụn trứng cá (Acne)": {
+        "keywords_vi": ["mụn", "mụn trứng cá", "mụn bọc", "mụn mủ", "mụn đầu đen", "bã nhờn", "nổi mụn ở mặt", "lỗ chân lông to", "mụn viêm"],
+        "keywords_en": ["acne", "pimple", "pimples", "blackhead", "whitehead", "pus", "breakout", "oily skin", "facial spots", "blemishes"],
+        "base_confidence": 0.94
+    },
+    "Dị ứng (Allergy)": {
+        "keywords_vi": ["dị ứng", "hắt hơi", "sổ mũi", "ngứa mũi", "ngứa mắt", "mẩn ngứa", "mề đay", "phát ban ngứa", "chảy nước mắt", "dị ứng phấn hoa", "dị ứng thức ăn"],
+        "keywords_en": ["allergy", "allergic", "sneeze", "sneezing", "runny nose", "itch", "itching", "hives", "watery eyes", "allergic rhinitis"],
+        "base_confidence": 0.93
+    },
+    "Viêm khớp (Arthritis)": {
+        "keywords_vi": ["đau khớp", "sưng khớp", "cứng khớp", "viêm khớp", "mỏi khớp", "đau đầu gối", "đau cổ tay", "đau khớp ngón tay", "thoái hóa khớp"],
+        "keywords_en": ["arthritis", "joint pain", "joint stiffness", "swollen joints", "knee pain", "bone ache", "rheumatism", "arthralgia"],
+        "base_confidence": 0.91
+    },
+    "Hen phế quản (Bronchial Asthma)": {
+        "keywords_vi": ["hen suyễn", "hen phế quản", "thở khò khè", "khó thở", "co thắt ngực", "cơn khó thở về đêm", "hụt hơi", "thở rít"],
+        "keywords_en": ["asthma", "wheezing", "shortness of breath", "breathing difficulty", "chest tightness", "bronchospasm", "gasping"],
+        "base_confidence": 0.92
+    },
+    "Thoái hóa đốt sống cổ (Cervical spondylosis)": {
+        "keywords_vi": ["thoái hóa đốt sống cổ", "đau cổ", "mỏi cổ", "đau vai gáy", "cứng cổ", "tê tay", "tê dọc cánh tay", "đau đốt sống cổ"],
+        "keywords_en": ["cervical spondylosis", "neck pain", "stiff neck", "neck stiffness", "shoulder ache", "numbness in hands", "cervical spine"],
+        "base_confidence": 0.90
+    },
+    "Thủy đậu (Chicken pox)": {
+        "keywords_vi": ["thủy đậu", "phỏng rạ", "bóng nước", "mụn nước khắp người", "mụn nước ngứa", "sốt phát ban mụn nước", "nốt đậu"],
+        "keywords_en": ["chicken pox", "varicella", "blister", "blisters", "itchy blisters", "vesicles", "fluid filled bumps"],
+        "base_confidence": 0.95
+    },
+    "Cảm lạnh chung (Common Cold)": {
+        "keywords_vi": ["cảm lạnh", "cảm cúm", "sốt nhẹ", "rát họng", "đau họng", "nghẹt mũi", "chảy nước mũi", "hắt xì", "ho có đờm nhẹ"],
+        "keywords_en": ["common cold", "cold", "sore throat", "mild fever", "cough", "nasal congestion", "runny nose", "sniffles"],
+        "base_confidence": 0.89
+    },
+    "Sốt xuất huyết (Dengue)": {
+        "keywords_vi": ["sốt xuất huyết", "sốt cao liên tục", "đau hốc mắt", "chấm đỏ dưới da", "chảy máu cam", "chảy máu chân răng", "đau cơ dữ dội", "sốt phát ban đỏ"],
+        "keywords_en": ["dengue", "dengue fever", "high fever", "eye pain", "retro orbital pain", "bleeding rash", "petechiae", "severe muscle pain"],
+        "base_confidence": 0.94
+    },
+    "Tiểu đường (Diabetes)": {
+        "keywords_vi": ["tiểu đường", "đái tháo đường", "khát nước liên tục", "tiểu nhiều lần", "tiểu đêm", "sụt cân nhanh", "mờ mắt", "đói liên tục", "vết thương lâu lành"],
+        "keywords_en": ["diabetes", "high blood sugar", "excessive thirst", "frequent urination", "polyuria", "weight loss", "blurred vision", "polydipsia"],
+        "base_confidence": 0.92
+    },
+    "Bệnh trĩ (Dimorphic Hemorrhoids)": {
+        "keywords_vi": ["trĩ", "bệnh trĩ", "trĩ nội", "trĩ ngoại", "đi ngoài ra máu", "đau rát hậu môn", "sa búi trĩ", "ngứa hậu môn", "chảy máu tươi khi đại tiện"],
+        "keywords_en": ["hemorrhoids", "piles", "rectal bleeding", "anal pain", "anal itching", "swollen veins in anus", "blood in stool"],
+        "base_confidence": 0.93
+    },
+    "Phản ứng thuốc (Drug reaction)": {
+        "keywords_vi": ["dị ứng thuốc", "phản ứng thuốc", "phát ban sau uống thuốc", "ngứa ngáy sau dùng thuốc", "sưng môi sau uống thuốc", "sốc phản vệ nhẹ"],
+        "keywords_en": ["drug reaction", "medicine allergy", "drug allergy", "rash after medication", "swelling after taking medicine", "adverse drug event"],
+        "base_confidence": 0.91
+    },
+    "Nhiễm trùng nấm (Fungal infection)": {
+        "keywords_vi": ["nhiễm nấm", "nấm da", "hắc lào", "lang ben", "nấm móng", "nấm bẹn", "vùng da tròn ngứa tróc vảy", "ngứa rát kẽ chân"],
+        "keywords_en": ["fungal infection", "fungus", "ringworm", "athletes foot", "tinea", "itchy peeling skin", "white patches on skin"],
+        "base_confidence": 0.93
+    },
+    "Trào ngược dạ dày thực quản (GERD)": {
+        "keywords_vi": ["trào ngược", "trào ngược dạ dày", "ợ chua", "ợ nóng", "nóng rát sau xương ức", "đắng miệng", "buồn nôn sau ăn", "cảm giác vướng ở cổ họng"],
+        "keywords_en": ["gerd", "acid reflux", "heartburn", "acid regurgitation", "chest burning", "sour taste", "throat lump"],
+        "base_confidence": 0.94
+    },
+    "Cao huyết áp (Hypertension)": {
+        "keywords_vi": ["cao huyết áp", "tăng huyết áp", "huyết áp cao", "chóng mặt hoa mắt", "nặng đầu", "đau đầu vùng chẩm", "tim đập nhanh", "đỏ bừng mặt"],
+        "keywords_en": ["hypertension", "high blood pressure", "elevated bp", "dizziness", "pounding heart", "throbbing temples", "head fullness"],
+        "base_confidence": 0.90
+    },
+    "Chốc lở (Impetigo)": {
+        "keywords_vi": ["chốc lở", "vết loét đóng vảy vàng", "vảy mật ong", "mụn nước quanh miệng", "lở loét ngoài da ở trẻ", "rỉ dịch vàng"],
+        "keywords_en": ["impetigo", "yellow crust", "honey colored crust", "sores around mouth", "sores around nose", "crusted sores"],
+        "base_confidence": 0.95
+    },
+    "Vàng da (Jaundice)": {
+        "keywords_vi": ["vàng da", "vàng mắt", "mắt vàng", "nước tiểu màu trà đậm", "nước tiểu sẫm màu", "phân bạc màu", "ngứa da kèm vàng da", "men gan cao"],
+        "keywords_en": ["jaundice", "yellow skin", "yellow eyes", "icterus", "dark urine", "pale stool", "bilirubin", "liver issue"],
+        "base_confidence": 0.94
+    },
+    "Sốt rét (Malaria)": {
+        "keywords_vi": ["sốt rét", "rét run", "sốt từng cơn", "vã mồ hôi sau sốt", "ớn lạnh dữ dội", "sốt rét rừng"],
+        "keywords_en": ["malaria", "shivering", "chills", "fever chills cycle", "sweating", "periodic fever", "rigors"],
+        "base_confidence": 0.93
+    },
+    "Đau nửa đầu (Migraine)": {
+        "keywords_vi": ["đau nửa đầu", "đau giật một bên đầu", "đau theo nhịp mạch", "sợ ánh sáng", "sợ tiếng động", "hoa mắt trước cơn đau", "migraine"],
+        "keywords_en": ["migraine", "throbbing headache", "one sided headache", "pulsating headache", "photophobia", "light sensitivity", "aura"],
+        "base_confidence": 0.94
+    },
+    "Viêm loét dạ dày (Peptic ulcer disease)": {
+        "keywords_vi": ["viêm loét dạ dày", "đau dạ dày", "đau bao tử", "đau thượng vị", "đau rát bụng khi đói", "đầy bụng khó tiêu", "buồn nôn nôn mửa", "đau vùng bụng trên"],
+        "keywords_en": ["peptic ulcer", "stomach ulcer", "gastric ulcer", "epigastric pain", "burning stomach pain", "hunger pain", "indigestion"],
+        "base_confidence": 0.92
+    },
+    "Viêm phổi (Pneumonia)": {
+        "keywords_vi": ["viêm phổi", "ho có đờm đặc", "đờm xanh vàng", "sốt cao rét run", "đau ngực khi ho", "đau ngực khi hít thở sâu", "khó thở thở gấp"],
+        "keywords_en": ["pneumonia", "productive cough", "rusty sputum", "green phlegm", "chest pain when coughing", "pleuritic chest pain", "rapid breathing"],
+        "base_confidence": 0.93
+    },
+    "Vẩy nến (Psoriasis)": {
+        "keywords_vi": ["vẩy nến", "vảy nến", "mảng đỏ tróc vảy bạc", "mảng da dày cộm", "vảy trắng bạc ở khuỷu tay", "da nứt nẻ chảy máu"],
+        "keywords_en": ["psoriasis", "silvery scales", "red scaly patches", "plaques on elbows", "dry cracked scaly skin", "flaking skin"],
+        "base_confidence": 0.95
+    },
+    "Thương hàn (Typhoid)": {
+        "keywords_vi": ["thương hàn", "sốt thương hàn", "sốt tăng dần", "đau bụng tiêu chảy kéo dài", "chướng bụng", "mệt lả", "sốt hình bậc thang"],
+        "keywords_en": ["typhoid", "typhoid fever", "sustained fever", "step ladder fever", "abdominal tenderness", "rose spots", "constipation or diarrhea"],
+        "base_confidence": 0.91
+    },
+    "Nhiễm trùng đường tiết niệu (Urinary tract infection)": {
+        "keywords_vi": ["viêm đường tiết niệu", "tiểu buốt", "tiểu rắt", "tiểu đau", "nước tiểu đục", "tiểu ra máu", "tiểu lắt nhắt", "đau tức bụng dưới khi đi tiểu"],
+        "keywords_en": ["uti", "urinary tract infection", "painful urination", "burning urination", "dysuria", "cloudy urine", "frequent urge to urinate"],
+        "base_confidence": 0.95
+    },
+    "Viêm tĩnh mạch (Varicose Veins)": {
+        "keywords_vi": ["suy giãn tĩnh mạch", "viêm tĩnh mạch", "nổi gân xanh", "gân ngoằn ngoèo ở chân", "nặng chân", "phù chân", "nhức mỏi bắp chân về chiều"],
+        "keywords_en": ["varicose veins", "enlarged veins", "spider veins", "heavy legs", "swollen ankles", "leg aching after standing", "phlebitis"],
+        "base_confidence": 0.93
+    }
+}
+
+def diagnose_by_symptoms_kb(text_vi: str, text_en: str = "") -> tuple[str, float]:
+    """
+    Thuật toán phân tích và tính trọng số khớp triệu chứng đa ngôn ngữ (Việt - Anh)
+    trên toàn bộ 24 bệnh lý trong hệ cơ sở tri thức y khoa MediConnect.
+    """
+    cleaned_vi = (text_vi or "").lower()
+    cleaned_en = (text_en or "").lower()
+    
+    best_disease = "Cảm lạnh chung (Common Cold)"
+    best_score = 0.0
+    best_confidence = 0.85
+    
+    for disease_name, info in DISEASE_KNOWLEDGE_BASE.items():
+        score = 0
         
-        # Phân tích sơ bộ từ khóa tiếng Việt hoặc tiếng Anh để có chẩn đoán mô phỏng phù hợp
-        if any(w in all_symptoms_lower for w in ["đau ngực", "tim", "chest pain", "heart", "huyết áp", "bp"]):
-            predicted_disease = 'Cao huyết áp (Hypertension)'
-            confidence = 88
-        elif any(w in all_symptoms_lower for w in ["đau đầu", "sốt", "ho", "headache", "fever", "cough", "cảm"]):
-            predicted_disease = 'Cảm lạnh chung (Common Cold)'
-            confidence = 92
-        elif any(w in all_symptoms_lower for w in ["dị ứng", "ngứa", "allergy", "itch", "phát ban", "mề đay"]):
-            predicted_disease = 'Dị ứng (Allergy)'
-            confidence = 95
-        elif any(w in all_symptoms_lower for w in ["khớp", "xương", "mỏi cơ", "arthritis"]):
-            predicted_disease = 'Viêm khớp (Arthritis)'
-            confidence = 85
-        elif any(w in all_symptoms_lower for w in ["dạ dày", "bao tử", "trào ngược", "gerd", "peptic"]):
-            predicted_disease = 'Trào ngược dạ dày thực quản (GERD)'
-            confidence = 90
+        # 1. Khớp từ khóa Tiếng Việt
+        for kw in info["keywords_vi"]:
+            if kw in cleaned_vi:
+                # Từ khóa dài hoặc chứa nhiều từ mang trọng số cao hơn
+                score += 3 if len(kw.split()) > 1 else 1.5
+                
+        # 2. Khớp từ khóa Tiếng Anh
+        for kw in info["keywords_en"]:
+            if kw in cleaned_en:
+                score += 3 if len(kw.split()) > 1 else 1.5
+                
+        if score > best_score:
+            best_score = score
+            best_disease = disease_name
+            # Tính độ tin cậy dựa trên số lượng triệu chứng khớp được
+            calculated_conf = min(0.98, info["base_confidence"] + min(0.04, (score - 1) * 0.015))
+            best_confidence = round(calculated_conf, 4)
+            
+    # Nếu không khớp từ khóa chuyên biệt nào, trả về bệnh phù hợp nhất kèm độ tin cậy cơ sở
+    if best_score == 0:
+        if any(w in cleaned_vi for w in ["sốt", "nóng sốt", "ho", "mệt", "đau người"]):
+            best_disease = "Cảm lạnh chung (Common Cold)"
+            best_confidence = 0.88
+        elif any(w in cleaned_vi for w in ["đau đầu", "nhức đầu", "chóng mặt"]):
+            best_disease = "Đau nửa đầu (Migraine)"
+            best_confidence = 0.86
+        else:
+            best_disease = "Cảm lạnh chung (Common Cold)"
+            best_confidence = 0.80
+
+    return best_disease, best_confidence
+
+def run_mediconnect_simulation(message: str, history: List[ChatMessage]):
+    # Kiểm tra tin nhắn vô nghĩa hoặc 1 chữ cái
+    if is_meaningless_text(message):
+        return {
+            "reply": (
+                "Tôi chưa hiểu mô tả triệu chứng của bạn. "
+                "Vui lòng nhập rõ các triệu chứng bạn đang gặp phải (ví dụ: sốt, ho khan, đau đầu, đau tức ngực, mệt mỏi...) để tôi có thể hỗ trợ chẩn đoán cho bạn nhé."
+            )
+        }
+
+    # Đếm số lượng tin nhắn của bệnh nhân
+    patient_messages = [msg for msg in history if msg.role == 'patient']
+    user_turn = len(patient_messages) + 1  # Lượt hiện tại của user
+
+    # Tập hợp tất cả tin nhắn của bệnh nhân để phân tích tổng thể
+    all_symptoms = " ".join([msg.text for msg in patient_messages]) + " " + message
+
+    if user_turn == 1:
+        return {
+            "reply": (
+                "Chào bạn, tôi là trợ lý y khoa MediConnect. "
+                "Tôi đã ghi nhận triệu chứng ban đầu là: \"" + message + "\". "
+                "Bạn có thể cho tôi biết triệu chứng này đã xuất hiện được bao lâu rồi không?"
+            )
+        }
+    elif user_turn == 2:
+        return {
+            "reply": (
+                "Cảm ơn bạn. "
+                "Bạn có thể mô tả rõ hơn mức độ nghiêm trọng của cảm giác này không? "
+                "(Ví dụ: đau âm ỉ, đau nhói, hay có ảnh hưởng đến sinh hoạt hàng ngày không?)"
+            )
+        }
+    elif user_turn == 3:
+        return {
+            "reply": (
+                "Tôi đã hiểu. "
+                "Bạn có kèm theo các triệu chứng nào khác không, ví dụ như sốt, ho, phát ban, buồn nôn hoặc nhức mỏi cơ thể?"
+            )
+        }
+    elif user_turn == 4:
+        msg1 = patient_messages[0].text if len(patient_messages) > 0 else message
+        msg2 = patient_messages[1].text if len(patient_messages) > 1 else "chưa rõ"
+        msg3 = patient_messages[2].text if len(patient_messages) > 2 else "chưa rõ"
+        return {
+            "reply": (
+                "Tóm tắt các triệu chứng bạn đã chia sẻ:\n"
+                f"- Triệu chứng chính: {msg1}\n"
+                f"- Thời gian kéo dài: {msg2}\n"
+                f"- Mức độ/Triệu chứng đi kèm: {msg3}\n\n"
+                "Bạn có tiền sử bệnh lý gì đặc biệt hoặc đang sử dụng thuốc nào gần đây không?"
+            )
+        }
+    else:
+        # Ở lượt thứ 5+, chẩn đoán bệnh bằng hệ cơ sở tri thức y khoa thông minh
+        predicted_disease, confidence_float = diagnose_by_symptoms_kb(all_symptoms, all_symptoms)
+        confidence_percent = int(confidence_float * 100)
             
         return {
             "reply": (
                 f"Cảm ơn bạn đã cung cấp đầy đủ thông tin y tế.\n\n"
                 f"Dựa trên các triệu chứng đã trao đổi, đây là kết quả phân tích sơ bộ từ trợ lý AI:\n\n"
                 f"Dự đoán bệnh: **{predicted_disease}**\n"
-                f"Độ tin cậy: **{confidence}%**\n\n"
+                f"Độ tin cậy: **{confidence_percent}%**\n\n"
                 f"Khuyên bệnh nhân tiến hành đặt lịch hẹn khám trực tiếp với bác sĩ chuyên khoa trên MediConnect để được chẩn đoán lâm sàng chính xác nhất."
             )
         }
@@ -322,20 +529,8 @@ async def predict(request: SymptomRequest):
                 
             predicted_disease = DISEASE_CLASSES[class_idx]
         else:
-            # Thuật toán giả lập chẩn đoán theo từ khoá khi model ONNX offline
-            txt = translated_text.lower()
-            if "chest pain" in txt or "heart" in txt:
-                predicted_disease = 'Cao huyết áp (Hypertension)'
-                confidence = 0.88
-            elif "headache" in txt or "fever" in txt or "cough" in txt:
-                predicted_disease = 'Cảm lạnh chung (Common Cold)'
-                confidence = 0.92
-            elif "allergy" in txt or "itch" in txt:
-                predicted_disease = 'Dị ứng (Allergy)'
-                confidence = 0.95
-            else:
-                predicted_disease = 'Cảm lạnh chung (Common Cold)'
-                confidence = 0.85
+            # Chẩn đoán thông minh theo cơ sở tri thức y khoa 24 bệnh lý khi ONNX model offline
+            predicted_disease, confidence = diagnose_by_symptoms_kb(request.text, translated_text)
 
         return PredictionResponse(
             disease=predicted_disease,

@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+pydantic
+numpy
+onnxruntime
+transformers
+tokenizers
+deep-translator
