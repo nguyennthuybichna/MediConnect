@@ -107,6 +107,21 @@ router.get(
   doctorController.getAppointmentDetail
 );
 
+// Lấy AI Tóm tắt Bệnh sử Bệnh nhân (AI Patient Summary)
+router.get(
+  '/api/appointments/:id/summary',
+  verifyToken,
+  authorizeRoles('doctor', 'admin', 'patient'),
+  appointmentController.getAppointmentAISummary
+);
+
+router.get(
+  '/api/appointments/:appointment_id/summary',
+  verifyToken,
+  authorizeRoles('doctor', 'admin', 'patient'),
+  appointmentController.getAppointmentAISummary
+);
+
 // Bác sĩ cập nhật chẩn đoán lâm sàng và đơn thuốc cho lịch khám
 router.put(
   '/api/appointments/:appointment_id/diagnose', 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../services/api';
 import {
   Calendar,
   Clock,
@@ -31,12 +31,7 @@ const PatientHistory = () => {
     setLoading(true);
     setError(null);
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5001/api/diagnosis/history', {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : '',
-        },
-      });
+      const response = await api.get('/diagnosis/history');
 
       // Hỗ trợ cả 2 định dạng trả về: { success: true, data: [...] } hoặc mảng trực tiếp [...]
       const data = response.data?.data || (Array.isArray(response.data) ? response.data : []);

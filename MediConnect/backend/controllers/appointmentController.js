@@ -280,11 +280,100 @@ const getBookedSlots = async (req, res) => {
   }
 };
 
+const { generateAISummary } = require('../utils/aiSummaryHelper');
+
+// 6. API Lấy AI Tóm tắt Bệnh sử (AI Patient Summary) cho Bác sĩ
+const getAppointmentAISummary = async (req, res) => {
+  const appointmentId = req.params.id || req.params.appointment_id;
+
+  if (!appointmentId) {
+    return res.status(400).json({
+      success: false,
+      error: 'Thiếu mã lịch hẹn (appointment_id) trong tham số URL.'
+    });
+  }
+
+  try {
+    let patientId = null;
+    let patientName = 'Bệnh nhân';
+
+    // 1. Truy vấn SQL: Từ appointment_id lấy patient_id
+    const appointmentSql = `
+      SELECT 
+        app.appointment_id,
+        app.patient_id,
+        u.full_name AS patient_name,
+        u.email AS patient_email
+      FROM Appointment app
+      INNER JOIN Users u ON app.patient_id = u.user_id
+      WHERE app.appointment_id = ?
+    `;
+    const [appRows] = await db.execute(appointmentSql, [appointmentId]);
+
+    if (appRows.length > 0) {
+      patientId = appRows[0].patient_id;
+      patientName = appRows[0].patient_name || 'Bệnh nhân';
+    } else {
+      // Dự phòng: Kiểm tra xem ID có phải là patient_id trực tiếp không
+      const userSql = `
+        SELECT user_id, full_name, email 
+        FROM Users 
+        WHERE user_id = ? AND role = 'patient'
+      `;
+      const [userRows] = await db.execute(userSql, [appointmentId]);
+      if (userRows.length > 0) {
+        patientId = userRows[0].user_id;
+        patientName = userRows[0].full_name || 'Bệnh nhân';
+      } else {
+        return res.status(404).json({
+          success: false,
+          error: `Không tìm thấy lịch hẹn hoặc hồ sơ bệnh nhân với mã: ${appointmentId}`
+        });
+      }
+    }
+
+    // 2. Truy vấn toàn bộ lịch sử khám của bệnh nhân trong bảng AI_Predictions với is_verified = 1
+    // (Chỉ lấy các cột: created_at, symptoms_text, doctor_corrected_disease)
+    const historySql = `
+      SELECT 
+        created_at, 
+        symptoms_text, 
+        doctor_corrected_disease
+      FROM AI_Predictions
+      WHERE patient_id = ? AND is_verified = 1
+      ORDER BY created_at DESC
+    `;
+    const [historyRows] = await db.execute(historySql, [patientId]);
+
+    // 3. Logic Tóm tắt (NLP/LLM): Tạo đoạn text 3-4 dòng tổng hợp bệnh lý mãn tính / triệu chứng thường gặp
+    const summary = await generateAISummary(historyRows, patientName);
+
+    return res.status(200).json({
+      success: true,
+      appointment_id: appRows.length > 0 ? appRows[0].appointment_id : null,
+      patient_id: patientId,
+      patient_name: patientName,
+      history_count: historyRows.length,
+      summary: summary,
+      history_records: historyRows
+    });
+
+  } catch (error) {
+    console.error('❌ Lỗi tại appointmentController.getAppointmentAISummary:', error.message);
+    return res.status(500).json({
+      success: false,
+      error: 'Lỗi máy chủ nội bộ khi tạo tóm tắt bệnh sử AI.'
+    });
+  }
+};
+
 module.exports = {
   getDoctorAppointments,
   createAppointment,
   getPatientHistory,
   getAllAppointments,
-  getBookedSlots
+  getBookedSlots,
+  getAppointmentAISummary
 };
+
 

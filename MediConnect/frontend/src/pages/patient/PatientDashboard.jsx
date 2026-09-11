@@ -20,7 +20,6 @@ import {
 import { useNavigate } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth';
 import api from '../../services/api';
-import axios from 'axios';
 
 const PatientDashboard = () => {
   const navigate = useNavigate();

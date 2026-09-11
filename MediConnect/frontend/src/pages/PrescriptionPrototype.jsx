@@ -6,7 +6,7 @@ import {
   Trash2, 
   QrCode, 
   Activity, 
-  ShieldAlert, 
+  AlertTriangle, 
   Smartphone, 
   Laptop, 
   CheckCircle2, 
@@ -16,572 +16,744 @@ import {
   User,
   Clock,
   Printer,
-  ChevronRight
+  ChevronRight,
+  Brain,
+  Bot,
+  ShieldCheck,
+  ExternalLink,
+  Check
 } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
-
-const removeAccents = (str) => {
-  if (!str) return '';
-  return str
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/đ/g, 'd')
-    .replace(/Đ/g, 'D');
-};
+import { robotoRegularBase64 } from '../utils/vietnameseFont';
+import AISummaryCard from '../components/AISummaryCard';
 
 const PrescriptionPrototype = () => {
-  const [activeTab, setActiveTab] = useState('doctor'); // 'doctor' | 'pharmacist'
+  // 'doctor' | 'pharmacist' (QR scan view)
+  const [activeTab, setActiveTab] = useState('doctor');
   
-  // Trạng thái đơn thuốc bác sĩ kê
+  // Trạng thái thông tin bệnh nhân
   const [patientInfo] = useState({
-    name: 'Elena Rossi',
+    name: 'Robert MacMillan',
+    initials: 'RM',
     age: 45,
-    gender: 'Nữ',
-    allergies: 'Penicillin (Phản ứng sốc phản vệ)'
+    gender: 'Male',
+    id: '#MR-84729',
+    allergy: 'Penicillin'
   });
   
-  const [aiDiagnosis] = useState('Hen phế quản cấp tính (J45.0)');
-  const [doctorDiagnosis, setDoctorDiagnosis] = useState('Viêm phế quản co thắt cấp tính (J20.8)');
+  // Trạng thái AI & Chẩn đoán
+  const [aiAnalysis] = useState({
+    diagnosis: 'Acute Bronchitis',
+    confidence: 88,
+    description: 'Based on presented symptoms (persistent cough, mild fever, chest congestion) and patient history.'
+  });
   
+  const [clinicalConclusion, setClinicalConclusion] = useState(
+    'Confirmed acute bronchitis. Patient advised to rest and maintain hydration. Prescribing bronchodilator and cough suppressant.'
+  );
+  
+  // Danh sách thuốc trong đơn
   const [medicines, setMedicines] = useState([
-    { name: 'Albuterol HFA 90mcg Inhaler', dosage: '2 nhát / 4-6 giờ', usage: 'Hít khi có triệu chứng khó thở' },
-    { name: 'Prednisolone 5mg', dosage: '6 viên / ngày', usage: 'Uống vào buổi sáng sau khi ăn no' },
-    { name: 'Montelukast 10mg', dosage: '1 viên / tối', usage: 'Uống trước khi đi ngủ 30 phút' }
+    { 
+      id: 1,
+      name: 'Albuterol Sulfate', 
+      dosage: '90mcg Inhaler', 
+      instructions: '2 puffs every 4-6 hours as needed for shortness of breath.' 
+    },
+    { 
+      id: 2,
+      name: 'Benzonatate', 
+      dosage: '100mg Capsule', 
+      instructions: 'Take 1 capsule three times daily as needed for cough. Do not chew.' 
+    }
   ]);
 
   // Trạng thái form thêm thuốc nhanh
   const [newMedName, setNewMedName] = useState('');
   const [newMedDosage, setNewMedDosage] = useState('');
-  const [newMedUsage, setNewMedUsage] = useState('');
+  const [newMedInstructions, setNewMedInstructions] = useState('');
 
-  // Trạng thái Tab 2 (Dược sĩ phát thuốc)
+  // Trạng thái thông báo Toast
+  const [toastMessage, setToastMessage] = useState(null);
+
+  // Trạng thái Dược sĩ phát thuốc
   const [isDispensed, setIsDispensed] = useState(false);
 
   const qrContainerRef = useRef(null);
 
-  // Thêm thuốc nhanh
-  const handleAddMedicine = (e) => {
-    e.preventDefault();
-    if (!newMedName.trim() || !newMedDosage.trim()) return;
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 3500);
+  };
 
-    setMedicines([
-      ...medicines,
-      {
-        name: newMedName.trim(),
-        dosage: newMedDosage.trim(),
-        usage: newMedUsage.trim() || 'Uống theo chỉ định của bác sĩ'
-      }
-    ]);
-    // Reset form
+  // Thêm thuốc mới vào danh sách
+  const handleAddMedicine = (e) => {
+    if (e) e.preventDefault();
+    if (!newMedName.trim()) {
+      showToast('⚠️ Vui lòng nhập tên thuốc!');
+      return;
+    }
+
+    const newItem = {
+      id: Date.now(),
+      name: newMedName.trim(),
+      dosage: newMedDosage.trim() || 'Theo chỉ định',
+      instructions: newMedInstructions.trim() || 'Uống theo hướng dẫn của bác sĩ.'
+    };
+
+    setMedicines([...medicines, newItem]);
     setNewMedName('');
     setNewMedDosage('');
-    setNewMedUsage('');
+    setNewMedInstructions('');
+    showToast(`✓ Đã thêm thuốc ${newItem.name}`);
   };
 
   // Xóa thuốc
-  const handleDeleteMedicine = (index) => {
-    setMedicines(medicines.filter((_, idx) => idx !== index));
+  const handleDeleteMedicine = (id) => {
+    const medToDelete = medicines.find(m => m.id === id);
+    setMedicines(medicines.filter(m => m.id !== id));
+    if (medToDelete) {
+      showToast(`Đã xóa ${medToDelete.name}`);
+    }
   };
 
-  // Xuất file PDF chứa mã QR của đơn thuốc
-  const handleExportPDF = () => {
-    const doc = new jsPDF();
+  // Lưu bản nháp
+  const handleSaveDraft = () => {
+    showToast('✓ Đã lưu bản nháp đơn thuốc thành công!');
+  };
 
-    // 1. Header Phòng Khám
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(20);
-    doc.setTextColor(194, 65, 12); // Tông cam đất đậm (orange-700)
-    doc.text('MEDICONNECT CLINIC', 20, 20);
-    
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(120, 120, 120);
-    doc.text('123 Medical Way, Seattle | Hotline: 1900-1234 | Web: mediconnect.com', 20, 26);
-    
-    doc.setDrawColor(241, 245, 249);
-    doc.line(20, 30, 190, 30);
+  // Tạo và xuất file PDF chứa mã QR của đơn thuốc
+  const generatePDF = () => {
+    try {
+      const doc = new jsPDF({
+        orientation: 'p',
+        unit: 'mm',
+        format: 'a4'
+      });
 
-    // 2. Tiêu Đề Đơn Thuốc
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(15);
-    doc.setTextColor(30, 30, 30);
-    doc.text('DON THUOC Y KHOA (PRESCRIPTION)', 105, 42, { align: 'center' });
-
-    // 3. Thông Tin Bệnh Nhân
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(60, 60, 60);
-    doc.text(`Benh nhan (Patient): ${removeAccents(patientInfo.name)}`, 20, 54);
-    doc.text(`Chan doan (Diagnosis): ${removeAccents(doctorDiagnosis)}`, 20, 60);
-    doc.text(`Ngay ke (Date): ${new Date().toLocaleDateString('vi-VN')}`, 130, 54);
-
-    // 4. Bảng Thuốc
-    const columns = [
-      { header: 'Ten Thuoc / Biet Duoc', dataKey: 'name' },
-      { header: 'Lieu Luong', dataKey: 'dosage' },
-      { header: 'Huong Dan Su Dung', dataKey: 'usage' }
-    ];
-
-    const rows = medicines.map(m => ({
-      name: removeAccents(m.name),
-      dosage: removeAccents(m.dosage),
-      usage: removeAccents(m.usage)
-    }));
-
-    doc.autoTable({
-      startY: 68,
-      columns: columns,
-      body: rows,
-      theme: 'grid',
-      headStyles: {
-        fillColor: [234, 88, 12], // Cam đất (orange-600)
-        textColor: [255, 255, 255],
-        fontStyle: 'bold',
-        fontSize: 9
-      },
-      bodyStyles: {
-        fontSize: 9,
-        textColor: [50, 50, 50]
-      },
-      margin: { left: 20, right: 20 }
-    });
-
-    const finalY = doc.lastAutoTable.finalY + 15;
-
-    // 5. Chữ Ký Bác Sĩ
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.setTextColor(30, 30, 30);
-    doc.text('Bac si dieu tri', 135, finalY);
-    
-    doc.setFont('helvetica', 'italic');
-    doc.setFontSize(8);
-    doc.setTextColor(120, 120, 120);
-    doc.text('(Ky va ghi ro ho ten)', 135, finalY + 4);
-    
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.setTextColor(194, 65, 12);
-    doc.text('BS. Sarah Chen', 135, finalY + 25);
-
-    // 6. Nhúng Mã QR vào PDF
-    if (qrContainerRef.current) {
-      const qrCanvas = qrContainerRef.current.querySelector('canvas');
-      if (qrCanvas) {
-        const qrDataUrl = qrCanvas.toDataURL('image/png');
-        doc.addImage(qrDataUrl, 'PNG', 20, finalY - 5, 28, 28);
-        
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(7);
-        doc.setTextColor(150, 150, 150);
-        doc.text('Quet QR de tra cuu don thuoc', 20, finalY + 27);
+      // Đăng ký font Roboto hỗ trợ tiếng Việt & ký tự quốc tế đầy đủ
+      if (robotoRegularBase64) {
+        doc.addFileToVFS('Roboto-Regular.ttf', robotoRegularBase64);
+        doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
+        doc.addFont('Roboto-Regular.ttf', 'Roboto', 'bold');
+        doc.setFont('Roboto', 'normal');
       }
+
+      // 1. Header Phòng Khám
+      doc.setFontSize(20);
+      doc.setTextColor(217, 114, 81); // #d97251
+      doc.text('MEDICONNECT CLINIC', 20, 20);
+      
+      doc.setFontSize(9);
+      doc.setTextColor(120, 120, 120);
+      doc.text('123 Medical Way, Seattle, WA 98109 | Hotline: 1900-1234 | Web: mediconnect.com', 20, 26);
+      
+      doc.setDrawColor(235, 220, 214);
+      doc.line(20, 30, 190, 30);
+
+      // 2. Tiêu Đề Đơn Thuốc
+      doc.setFontSize(15);
+      doc.setTextColor(45, 37, 34);
+      doc.text('PRESCRIPTION / TOA THUỐC Y KHOA', 105, 42, { align: 'center' });
+
+      // 3. Thông Tin Bệnh Nhân
+      doc.setFontSize(10);
+      doc.setTextColor(70, 60, 56);
+      doc.text(`Patient (Bệnh nhân): ${patientInfo.name} (${patientInfo.gender}, ${patientInfo.age} yrs)`, 20, 52);
+      doc.text(`Patient ID: ${patientInfo.id}`, 20, 58);
+      doc.text(`Diagnosis (Chẩn đoán): ${aiAnalysis.diagnosis}`, 20, 64);
+      doc.text(`Date (Ngày kê): ${new Date().toLocaleDateString('en-US')}`, 140, 52);
+      doc.text(`Allergies (Dị ứng): ${patientInfo.allergy}`, 140, 58);
+
+      // 4. Bảng Thuốc
+      const columns = [
+        { header: 'Medication', dataKey: 'name' },
+        { header: 'Dosage', dataKey: 'dosage' },
+        { header: 'Instructions', dataKey: 'instructions' }
+      ];
+
+      const rows = medicines.map(m => ({
+        name: m.name,
+        dosage: m.dosage,
+        instructions: m.instructions
+      }));
+
+      doc.autoTable({
+        startY: 72,
+        columns: columns,
+        body: rows,
+        theme: 'grid',
+        headStyles: {
+          fillColor: [217, 114, 81], // #d97251
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          fontSize: 9
+        },
+        bodyStyles: {
+          fontSize: 9,
+          textColor: [50, 50, 50]
+        },
+        margin: { left: 20, right: 20 }
+      });
+
+      const finalY = doc.lastAutoTable.finalY + 12;
+
+      // 5. Ghi chú lâm sàng
+      doc.setFontSize(9);
+      doc.setTextColor(90, 80, 75);
+      doc.text('Clinical Conclusion / Lời dặn:', 20, finalY);
+      const splitConclusion = doc.splitTextToSize(clinicalConclusion, 105);
+      doc.text(splitConclusion, 20, finalY + 6);
+
+      // 6. Chữ Ký Bác Sĩ
+      doc.setFontSize(10);
+      doc.setTextColor(45, 37, 34);
+      doc.text('Doctor Signature / Bác sĩ', 140, finalY);
+      
+      doc.setFontSize(8);
+      doc.setTextColor(130, 130, 130);
+      doc.text('(Signed electronically)', 140, finalY + 5);
+      
+      doc.setFontSize(10);
+      doc.setTextColor(217, 114, 81);
+      doc.text('Dr. Sarah Chen, MD', 140, finalY + 22);
+
+      // 7. Nhúng Mã QR vào PDF
+      if (qrContainerRef.current) {
+        const qrCanvas = qrContainerRef.current.querySelector('canvas');
+        if (qrCanvas) {
+          const qrDataUrl = qrCanvas.toDataURL('image/png');
+          doc.addImage(qrDataUrl, 'PNG', 140, finalY + 28, 25, 25);
+          
+          doc.setFontSize(7);
+          doc.setTextColor(140, 140, 140);
+          doc.text('Scan QR to verify prescription', 140, finalY + 56);
+        }
+      }
+
+      doc.save(`Prescription_${patientInfo.name.replace(/\s+/g, '_')}.pdf`);
+    } catch (err) {
+      console.error('Lỗi xuất PDF:', err);
+    }
+  };
+
+  // KHI CLICK NÚT MÀU CAM:
+  // 1. Tạo file PDF tải về
+  // 2. Chuyển sang màn hình quét mã QR (Pharmacist / Mobile view)
+  const handlePrintPrescription = () => {
+    if (medicines.length === 0) {
+      showToast('⚠️ Vui lòng thêm ít nhất 1 loại thuốc vào đơn!');
+      return;
     }
 
-    doc.save(`Prescription_${patientInfo.name.replace(/\s+/g, '_')}.pdf`);
+    // Xuất file PDF
+    generatePDF();
+
+    // Hiển thị thông báo và chuyển sang màn hình quét QR
+    showToast('✓ Đã xuất PDF và chuyển sang trang quét mã QR!');
+    setActiveTab('pharmacist');
   };
 
-  // URL cho mã QR quét (liên kết về trang tab 2)
+  // URL công khai cho mã QR
   const prescriptionPublicUrl = `${window.location.origin}/prescription-prototype?tab=pharmacist`;
 
   return (
-    <div className="min-h-screen bg-stone-50 text-stone-850 font-sans pb-16">
+    <div className="min-h-screen bg-[#f8f5f2] text-[#2d2522] font-sans pb-16 antialiased">
+      {/* Visual Toast Notification Banner */}
+      {toastMessage && (
+        <div className="fixed top-5 right-5 bg-[#d97251] text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-2.5 z-50 animate-bounce text-xs font-bold border border-white/20">
+          <CheckCircle2 className="w-4 h-4 text-orange-200" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
       {/* HEADER TỔNG QUAN HỆ THỐNG */}
-      <header className="bg-white border-b border-orange-100 py-4 px-6 sticky top-0 z-50 shadow-sm flex items-center justify-between">
+      <header className="bg-white border-b border-[#f0e4dd] py-3.5 px-6 sticky top-0 z-40 shadow-xs flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Link to="/doctor" className="w-9 h-9 rounded-xl hover:bg-stone-100 flex items-center justify-center transition-colors text-stone-600">
+          <Link to="/doctor" className="w-9 h-9 rounded-xl hover:bg-[#f5ede8] flex items-center justify-center transition-colors text-[#5c4a43]">
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-orange-600 flex items-center justify-center text-white">
+            <div className="w-8 h-8 rounded-xl bg-[#d97251] flex items-center justify-center text-white shadow-xs">
               <Activity className="w-5 h-5" />
             </div>
-            <span className="text-xl font-bold tracking-tight text-orange-900">MediConnect</span>
-            <span className="text-[10px] bg-orange-100 text-orange-850 px-2 py-0.5 rounded-full font-bold border border-orange-200">PROTOTYPE</span>
+            <span className="text-xl font-extrabold tracking-tight text-[#2d2522]">MediConnect</span>
+            <span className="text-[10px] bg-[#fbf0eb] text-[#d97251] px-2 py-0.5 rounded-full font-bold border border-[#f5ded5]">
+              E-PRESCRIPTION
+            </span>
           </div>
         </div>
 
         {/* Nút chuyển đổi hai màn hình trực quan */}
-        <div className="bg-stone-100 p-1 rounded-xl border border-stone-200 flex gap-1">
+        <div className="bg-[#f5ede8] p-1 rounded-2xl border border-[#ebdcd5] flex gap-1">
           <button
             onClick={() => setActiveTab('doctor')}
-            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
               activeTab === 'doctor' 
-                ? 'bg-white text-orange-950 shadow-sm' 
-                : 'text-stone-500 hover:text-stone-750'
+                ? 'bg-white text-[#2d2522] shadow-xs' 
+                : 'text-[#8c7e77] hover:text-[#2d2522]'
             }`}
           >
-            <Laptop className="w-4 h-4" />
-            Màn hình Bác sĩ (Desktop)
+            <Laptop className="w-4 h-4 text-[#d97251]" />
+            <span>1. Kê đơn thuốc (Trước khi in)</span>
           </button>
           <button
             onClick={() => setActiveTab('pharmacist')}
-            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
               activeTab === 'pharmacist' 
-                ? 'bg-white text-orange-950 shadow-sm' 
-                : 'text-stone-500 hover:text-stone-750'
+                ? 'bg-white text-[#2d2522] shadow-xs' 
+                : 'text-[#8c7e77] hover:text-[#2d2522]'
             }`}
           >
-            <Smartphone className="w-4 h-4" />
-            Trang Đích Quét QR (Mobile)
+            <Smartphone className="w-4 h-4 text-[#d97251]" />
+            <span>2. Trang quét mã QR (Sau khi in)</span>
           </button>
         </div>
       </header>
 
       {/* CANVAS DỰ PHÒNG ẨN ĐỂ NHÚNG VÀO PDF */}
       <div ref={qrContainerRef} className="hidden" aria-hidden="true">
-        <QRCodeCanvas value={prescriptionPublicUrl} size={155} level="H" includeMargin={false} />
+        <QRCodeCanvas value={prescriptionPublicUrl} size={180} level="H" includeMargin={false} />
       </div>
 
       {/* CONTAINER CHÍNH */}
-      <main className="max-w-6xl mx-auto px-4 mt-8">
+      <main className="max-w-6xl mx-auto px-4 mt-6">
         
         {/* =========================================================================
-           TAB 1: MÀN HÌNH BÁC SĨ (Desktop View)
+           MÀN HÌNH 1: BÁC SĨ KÊ ĐƠN (GIAO DIỆN CHÍNH TRƯỚC KHI IN QR)
            ========================================================================= */}
         {activeTab === 'doctor' && (
-          <div className="bg-white rounded-2xl border border-orange-200 shadow-md overflow-hidden animate-fadeIn">
-            {/* Desktop Mockup Header */}
-            <div className="bg-stone-50 border-b border-orange-100 px-6 py-4 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-stone-500 text-xs font-bold uppercase tracking-wider">
-                <Laptop className="w-4 h-4 text-orange-600" />
-                <span>Khu Vực Chẩn Đoán & Kê Đơn (Bác sĩ Lâm Sàng)</span>
+          <div className="bg-white rounded-3xl border border-[#ebdcd5] shadow-sm p-6 sm:p-8 space-y-6 animate-fadeIn">
+            
+            {/* 1. TOP HEADER: THÔNG TIN BỆNH NHÂN & CẢNH BÁO DỊ ỨNG */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#f3e7e1] pb-6">
+              {/* Left: Avatar & Info */}
+              <div className="flex items-center gap-4">
+                <div className="w-13 h-13 rounded-full bg-[#f3ede8] border border-[#e5dcd6] flex items-center justify-center font-bold text-[#5c4a43] text-base shadow-xs shrink-0">
+                  {patientInfo.initials}
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-[#2d2522] tracking-tight">{patientInfo.name}</h2>
+                  <p className="text-xs text-[#8c7e77] font-medium mt-0.5">
+                    {patientInfo.age} years old • {patientInfo.gender} • ID: {patientInfo.id}
+                  </p>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
-                <span className="text-xs font-semibold text-stone-500">Phòng Khám 03 • Đang kết nối</span>
+
+              {/* Right: Severe Allergy Pill */}
+              <div className="bg-[#feebeb] border border-[#fbd0d0] text-[#a82a2a] px-4 py-2.5 rounded-xl flex items-center gap-2 text-xs font-bold shadow-xs self-start sm:self-auto">
+                <AlertTriangle className="w-4 h-4 text-[#c53030] shrink-0" />
+                <span>Severe Allergy: {patientInfo.allergy}</span>
               </div>
             </div>
 
-            <div className="p-6 sm:p-8 space-y-6">
+            {/* AI PATIENT SUMMARY CARD */}
+            <AISummaryCard 
+              patient={{
+                name: patientInfo.name,
+                id: patientInfo.id,
+                age: patientInfo.age,
+                gender: patientInfo.gender,
+                allergies: [{ name: patientInfo.allergy, severity: 'Phản ứng sốc phản vệ' }],
+                symptoms: 'Ho dai dẳng 5 ngày, khó thở nhẹ khi vận động, tức ngực',
+                chronicConditions: [{ name: 'Viêm phế quản mãn tính', dx: '2021' }]
+              }}
+              onInsertToNotes={(summaryTxt) => {
+                setClinicalConclusion(prev => prev ? `${prev}\n\n[Tiền sử bệnh lý AI tóm tắt]: ${summaryTxt}` : summaryTxt);
+                showToast("Đã chèn tóm tắt bệnh sử vào kết luận lâm sàng!");
+              }}
+            />
+
+            {/* 2. BODY: HAI CỘT (AI ANALYSIS / CLINICAL CONCLUSION vs PRESCRIPTION BUILDER) */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
               
-              {/* 1. Header Thông Tin Bệnh Nhân */}
-              <div className="bg-stone-50/50 rounded-2xl border border-stone-200 p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center text-orange-800">
-                    <User className="w-6 h-6" />
+              {/* CỘT TRÁI (AI Analysis & Clinical Conclusion) */}
+              <div className="lg:col-span-5 space-y-5">
+                
+                {/* THẺ 1: AI ANALYSIS */}
+                <div className="bg-[#fff8f5] border border-[#f5e5dd] rounded-2xl p-5 relative overflow-hidden shadow-2xs">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-[#b8583c] font-bold text-[11px] uppercase tracking-wider">
+                      <Bot className="w-4 h-4 text-[#b8583c]" />
+                      <span>AI ANALYSIS</span>
+                    </div>
+                    <div className="w-9 h-9 rounded-full bg-[#f4e6de] flex items-center justify-center text-[#9c7d71]">
+                      <Brain className="w-4.5 h-4.5 text-[#a8897d]" />
+                    </div>
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2.5">
-                      <h3 className="text-base font-extrabold text-stone-800">{patientInfo.name}</h3>
-                      <span className="text-xs font-bold text-stone-500 bg-stone-200/60 px-2 py-0.5 rounded-md">
-                        ID: PT-84729
+
+                  <h3 className="text-xl font-bold text-[#2d2522] mt-2 mb-2">
+                    {aiAnalysis.diagnosis}
+                  </h3>
+
+                  {/* Progress Bar & Confidence Indicator */}
+                  <div className="space-y-1 my-3">
+                    <div className="flex justify-end">
+                      <span className="text-xs font-extrabold text-[#10705a]">
+                        {aiAnalysis.confidence}% Confidence
                       </span>
                     </div>
-                    <p className="text-xs text-stone-500 mt-1">
-                      Tuổi: <strong className="text-stone-700">{patientInfo.age}</strong> | Giới tính: <strong className="text-stone-700">{patientInfo.gender}</strong> | Nhóm máu: <strong className="text-stone-700">O+</strong>
-                    </p>
-                  </div>
-                </div>
-
-                {/* Cảnh báo dị ứng */}
-                <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-start gap-2.5 max-w-sm">
-                  <ShieldAlert className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
-                  <div>
-                    <span className="text-[10px] font-bold text-red-700 uppercase tracking-wide block">Cảnh báo dị ứng</span>
-                    <p className="text-xs font-semibold text-red-650 mt-0.5">{patientInfo.allergies}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* 2. So Sánh Chẩn Đoán */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {/* Thẻ AI Đề Xuất */}
-                <div className="bg-stone-50/30 rounded-2xl border border-stone-150 p-5 relative overflow-hidden">
-                  <div className="absolute top-0 right-0 bg-orange-100 text-orange-900 border-l border-b border-orange-200 rounded-bl-xl px-3 py-1 text-[10px] font-extrabold tracking-wider uppercase flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-orange-700 animate-pulse" />
-                    AI Triage
-                  </div>
-                  
-                  <h4 className="text-xs font-bold text-stone-400 uppercase tracking-wider mb-3">AI Đề Xuất Bệnh Lý</h4>
-                  <div className="flex items-center gap-3">
-                    <div className="bg-white border border-orange-200/50 rounded-xl px-4 py-2 text-sm font-extrabold text-orange-950 shadow-sm flex items-center gap-2">
-                      <span>{aiDiagnosis}</span>
+                    <div className="w-full bg-[#e2ede7] h-2.5 rounded-full overflow-hidden">
+                      <div 
+                        className="bg-[#10705a] h-full rounded-full transition-all duration-500" 
+                        style={{ width: `${aiAnalysis.confidence}%` }}
+                      />
                     </div>
-                    <span className="text-xs font-extrabold text-orange-850 bg-orange-100/50 px-2.5 py-1 rounded-lg border border-orange-150">
-                      🎯 Độ tin cậy: 91%
-                    </span>
                   </div>
-                  <p className="text-[11px] text-stone-455 leading-relaxed mt-2.5">
-                    *Gợi ý từ AI dựa trên phân tích triệu chứng của bệnh nhân: khó thở nhẹ, đau hắt ngực trái định kỳ, nhịp thở nhanh.
+
+                  <p className="text-xs text-[#6e6059] leading-relaxed mt-3 font-normal">
+                    {aiAnalysis.description}
                   </p>
                 </div>
 
-                {/* Thẻ Bác Sĩ Chốt Bệnh */}
-                <div className="bg-[#fdfbfb] rounded-2xl border border-orange-200 p-5 shadow-sm">
-                  <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">Bác Sĩ Chốt Chẩn Đoán</h4>
-                  <label className="block text-[11px] text-stone-450 font-semibold mb-1">
-                    (Có thể chỉnh sửa kết luận trước khi lưu hồ sơ)
-                  </label>
-                  <input
-                    type="text"
-                    value={doctorDiagnosis}
-                    onChange={(e) => setDoctorDiagnosis(e.target.value)}
-                    className="w-full bg-white border border-stone-200 rounded-xl py-2.5 px-3.5 text-sm font-bold text-stone-850 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all shadow-inner"
-                    placeholder="Nhập tên bệnh chẩn đoán..."
-                    required
+                {/* THẺ 2: CLINICAL CONCLUSION */}
+                <div className="bg-white border border-[#ebdcd5] rounded-2xl p-5 space-y-3 shadow-2xs">
+                  <h4 className="text-xs font-bold text-[#2d2522] uppercase tracking-wider">
+                    Clinical Conclusion
+                  </h4>
+                  <textarea
+                    rows={4}
+                    value={clinicalConclusion}
+                    onChange={(e) => setClinicalConclusion(e.target.value)}
+                    className="w-full bg-[#fcfaf8] border border-[#ebd8ce] rounded-xl p-3.5 text-xs text-[#3a302c] font-normal leading-relaxed focus:outline-none focus:border-[#d97251] focus:bg-white resize-none transition-all shadow-xs"
+                    placeholder="Nhập kết luận lâm sàng và chỉ định của bác sĩ..."
                   />
                 </div>
+
               </div>
 
-              {/* 3. Quản Lý Đơn Thuốc */}
-              <div className="bg-[#faf6f4] rounded-2xl border border-orange-100 p-5 sm:p-6 space-y-6">
-                <div>
-                  <h3 className="text-sm font-bold text-stone-800 uppercase tracking-wider">Đơn Thuốc Chỉ Định</h3>
-                  <p className="text-xs text-stone-500 mt-1">Kê toa thuốc, điều chỉnh liều lượng và cách dùng cho bệnh nhân.</p>
+              {/* CỘT PHẢI (Prescription Builder) */}
+              <div className="lg:col-span-7 space-y-5">
+                
+                {/* TIÊU ĐỀ KHU VỰC KÊ ĐƠN */}
+                <div className="flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-[#d97251]" />
+                  <h3 className="text-lg font-bold text-[#2d2522] tracking-tight">Prescription Builder</h3>
                 </div>
 
-                {/* Form thêm thuốc nhanh */}
-                <form onSubmit={handleAddMedicine} className="grid grid-cols-1 md:grid-cols-12 gap-3 bg-white p-4 rounded-xl border border-orange-200/55 shadow-sm">
-                  <div className="md:col-span-4">
-                    <label className="block text-[10px] font-bold text-stone-500 uppercase mb-1">Tên thuốc / Biệt dược</label>
-                    <input
-                      type="text"
-                      value={newMedName}
-                      onChange={(e) => setNewMedName(e.target.value)}
-                      placeholder="VD: Paracetamol 500mg"
-                      className="w-full bg-[#fcfaf9] border border-stone-200 rounded-lg py-2 px-3 text-xs focus:outline-none focus:border-orange-500"
-                      required
-                    />
-                  </div>
-                  <div className="md:col-span-3">
-                    <label className="block text-[10px] font-bold text-stone-500 uppercase mb-1">Liều lượng</label>
-                    <input
-                      type="text"
-                      value={newMedDosage}
-                      onChange={(e) => setNewMedDosage(e.target.value)}
-                      placeholder="VD: 3 viên / ngày"
-                      className="w-full bg-[#fcfaf9] border border-stone-200 rounded-lg py-2 px-3 text-xs focus:outline-none focus:border-orange-500"
-                      required
-                    />
-                  </div>
-                  <div className="md:col-span-3">
-                    <label className="block text-[10px] font-bold text-stone-500 uppercase mb-1">Cách dùng / Hướng dẫn</label>
-                    <input
-                      type="text"
-                      value={newMedUsage}
-                      onChange={(e) => setNewMedUsage(e.target.value)}
-                      placeholder="VD: Uống sau ăn sáng, tối"
-                      className="w-full bg-[#fcfaf9] border border-stone-200 rounded-lg py-2 px-3 text-xs focus:outline-none focus:border-orange-500"
-                    />
-                  </div>
-                  <div className="md:col-span-2 self-end">
-                    <button
-                      type="submit"
-                      disabled={!newMedName.trim() || !newMedDosage.trim()}
-                      className="w-full bg-orange-600 hover:bg-orange-700 disabled:bg-stone-300 disabled:cursor-not-allowed text-white font-bold text-xs py-2.5 px-4 rounded-lg transition-all flex items-center justify-center gap-1 shadow-sm active:scale-[0.98]"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Thêm thuốc
-                    </button>
-                  </div>
-                </form>
+                {/* FORM NHẬP THUỐC */}
+                <div className="bg-[#fdfbf9] border border-[#f0dfd7] rounded-2xl p-4 sm:p-5 space-y-3.5 shadow-2xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                    {/* Medication */}
+                    <div className="sm:col-span-5">
+                      <label className="block text-[11px] font-medium text-[#7a6c65] mb-1">Medication</label>
+                      <input
+                        type="text"
+                        value={newMedName}
+                        onChange={(e) => setNewMedName(e.target.value)}
+                        placeholder="e.g., Amoxicillin"
+                        className="w-full bg-white border border-[#e5d5cc] rounded-xl px-3.5 py-2.5 text-xs text-[#2d2522] placeholder:text-[#b0a29b] focus:outline-none focus:border-[#d97251] transition-all"
+                      />
+                    </div>
 
-                {/* Danh sách thuốc hiện tại */}
-                <div className="bg-white rounded-xl border border-stone-200 overflow-hidden">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="bg-stone-50 text-stone-500 uppercase tracking-wider text-[10px] border-b border-stone-200">
-                        <th className="py-3 px-4 font-extrabold w-8">#</th>
-                        <th className="py-3 px-4 font-extrabold">Tên thuốc</th>
-                        <th className="py-3 px-4 font-extrabold">Liều lượng</th>
-                        <th className="py-3 px-4 font-extrabold">Hướng dẫn sử dụng</th>
-                        <th className="py-3 px-4 font-extrabold text-center w-16">Hành động</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-stone-150">
-                      {medicines.length === 0 ? (
-                        <tr>
-                          <td colSpan="5" className="py-8 text-center text-stone-400 font-semibold">
-                            Chưa có thuốc nào được kê trong toa thuốc.
-                          </td>
+                    {/* Dosage */}
+                    <div className="sm:col-span-4">
+                      <label className="block text-[11px] font-medium text-[#7a6c65] mb-1">Dosage</label>
+                      <input
+                        type="text"
+                        value={newMedDosage}
+                        onChange={(e) => setNewMedDosage(e.target.value)}
+                        placeholder="e.g., 500mg"
+                        className="w-full bg-white border border-[#e5d5cc] rounded-xl px-3.5 py-2.5 text-xs text-[#2d2522] placeholder:text-[#b0a29b] focus:outline-none focus:border-[#d97251] transition-all"
+                      />
+                    </div>
+
+                    {/* Button + Add to Order */}
+                    <div className="sm:col-span-3">
+                      <button
+                        type="button"
+                        onClick={handleAddMedicine}
+                        className="w-full py-2.5 px-3 border border-[#d97251] text-[#d97251] hover:bg-[#d97251] hover:text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 active:scale-95 shadow-2xs whitespace-nowrap"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>+ Add to Order</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Instructions */}
+                  <div>
+                    <label className="block text-[11px] font-medium text-[#7a6c65] mb-1">Instructions</label>
+                    <input
+                      type="text"
+                      value={newMedInstructions}
+                      onChange={(e) => setNewMedInstructions(e.target.value)}
+                      placeholder="e.g., Take one tablet twice daily with food"
+                      className="w-full bg-white border border-[#e5d5cc] rounded-xl px-3.5 py-2.5 text-xs text-[#2d2522] placeholder:text-[#b0a29b] focus:outline-none focus:border-[#d97251] transition-all"
+                    />
+                  </div>
+                </div>
+
+                {/* BẢNG DANH SÁCH THUỐC ĐÃ KÊ */}
+                <div className="bg-white rounded-2xl border border-[#ebdcd5] overflow-hidden shadow-2xs">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-[#f0e4dd] text-[#8c7e77] text-[11px] font-bold">
+                          <th className="py-3 px-4 font-bold">Medication</th>
+                          <th className="py-3 px-4 font-bold">Dosage</th>
+                          <th className="py-3 px-4 font-bold">Instructions</th>
+                          <th className="py-3 px-4 font-bold text-right">Action</th>
                         </tr>
-                      ) : (
-                        medicines.map((m, index) => (
-                          <tr key={index} className="hover:bg-orange-50/10 transition-colors">
-                            <td className="py-3.5 px-4 font-bold text-stone-400">{index + 1}</td>
-                            <td className="py-3.5 px-4 font-bold text-stone-850">{m.name}</td>
-                            <td className="py-3.5 px-4 font-semibold text-orange-950">{m.dosage}</td>
-                            <td className="py-3.5 px-4 text-stone-600 font-medium">{m.usage}</td>
-                            <td className="py-3.5 px-4 text-center">
-                              <button
-                                onClick={() => handleDeleteMedicine(index)}
-                                className="p-1.5 hover:bg-red-50 rounded-lg text-red-650 hover:text-red-700 transition-colors inline-flex items-center"
-                                title="Xóa thuốc"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
+                      </thead>
+                      <tbody className="divide-y divide-[#f5ede8]">
+                        {medicines.length === 0 ? (
+                          <tr>
+                            <td colSpan="4" className="py-8 text-center text-[#a89991] font-medium italic">
+                              Chưa có thuốc nào trong đơn. Vui lòng nhập ở phía trên.
                             </td>
                           </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
+                        ) : (
+                          medicines.map((m) => (
+                            <tr key={m.id} className="hover:bg-[#fdfbf9] transition-colors">
+                              <td className="py-4 px-4 font-bold text-[#2d2522] text-xs">
+                                {m.name}
+                              </td>
+                              <td className="py-4 px-4 font-medium text-[#524641] text-xs">
+                                {m.dosage}
+                              </td>
+                              <td className="py-4 px-4 text-[#6e6059] text-xs leading-relaxed max-w-xs">
+                                {m.instructions}
+                              </td>
+                              <td className="py-4 px-4 text-right">
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteMedicine(m.id)}
+                                  className="p-1.5 text-[#d36060] hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors inline-flex items-center"
+                                  title="Remove medication"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              </div>
 
-              {/* 4. Action Footer Area */}
-              <div className="flex flex-col sm:flex-row items-center justify-between border-t border-orange-100 pt-6 gap-4">
-                <div className="text-xs text-stone-450 font-bold flex items-center gap-1.5">
-                  <Clock className="w-4 h-4 text-orange-600" />
-                  <span>Kê toa mới nhất: {new Date().toLocaleTimeString()} Hôm nay</span>
-                </div>
-
-                <div className="flex items-center gap-3 w-full sm:w-auto">
+                {/* HÀNG NÚT DƯỚI CÙNG (Save Draft & NÚT MÀU CAM PRINT PRESCRIPTION) */}
+                <div className="flex items-center justify-between pt-4">
                   <button
                     type="button"
-                    onClick={() => {
-                      alert(`Đã lưu bệnh án: ${doctorDiagnosis} với ${medicines.length} loại thuốc.`);
-                    }}
-                    className="flex-1 sm:flex-none border border-stone-250 hover:bg-stone-50 text-stone-800 text-xs font-bold py-3 px-5 rounded-xl transition-all"
+                    onClick={handleSaveDraft}
+                    className="text-xs font-bold text-[#706159] hover:text-[#2d2522] px-4 py-2.5 rounded-xl hover:bg-[#f3ede8] transition-all"
                   >
-                    Lưu Bệnh Án
+                    Save Draft
                   </button>
+
+                  {/* NÚT MÀU CAM - CLICK ĐỂ CHUYỂN SANG TRANG QUÉT MÃ QR */}
                   <button
                     type="button"
-                    onClick={handleExportPDF}
+                    onClick={handlePrintPrescription}
                     disabled={medicines.length === 0}
-                    className="flex-1 sm:flex-none bg-orange-600 hover:bg-orange-700 disabled:bg-stone-300 disabled:cursor-not-allowed text-white text-xs font-bold py-3 px-6 rounded-xl transition-all shadow-md shadow-orange-600/25 active:scale-[0.98] flex items-center justify-center gap-2"
+                    className="bg-[#d97251] hover:bg-[#c25e3f] disabled:bg-stone-300 disabled:cursor-not-allowed text-white text-xs font-bold py-3 px-6 rounded-xl transition-all shadow-md shadow-[#d97251]/25 hover:shadow-lg active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    <Printer className="w-4 h-4" />
-                    Xuất Toa Thuốc (PDF + QR)
+                    <QrCode className="w-4 h-4" />
+                    <span>Print Prescription (PDF + QR)</span>
                   </button>
                 </div>
+
               </div>
 
             </div>
+
           </div>
         )}
 
         {/* =========================================================================
-           TAB 2: TRANG ĐÍCH QUÉT MÃ QR (Mobile View)
+           MÀN HÌNH 2: TRANG ĐÍCH QUÉT MÃ QR (Mobile View / Dược sĩ cấp phát)
            ========================================================================= */}
         {activeTab === 'pharmacist' && (
-          <div className="max-w-md mx-auto animate-fadeIn">
-            <div className="text-center text-xs font-bold text-stone-500 uppercase tracking-widest mb-3 flex items-center justify-center gap-1">
-              <Smartphone className="w-4 h-4 text-orange-600" />
-              <span>Giao Diện Điện Thoại Của Dược Sĩ (Mobile Mockup)</span>
-            </div>
-
-            {/* Smart Phone Shell */}
-            <div className="bg-white rounded-[40px] border-[10px] border-stone-900 shadow-2xl relative overflow-hidden aspect-[9/18.5] flex flex-col justify-between">
-              
-              {/* Camera Notch */}
-              <div className="absolute top-2 left-1/2 -translate-x-1/2 w-32 h-6 bg-stone-900 rounded-full z-40 flex items-center justify-center">
-                <span className="w-1.5 h-1.5 rounded-full bg-slate-800 mr-2"></span>
-                <span className="w-3.5 h-1 bg-slate-800 rounded-full"></span>
+          <div className="space-y-6 animate-fadeIn">
+            
+            {/* Banner thông báo chuyển tiếp thành công */}
+            <div className="bg-[#fdf3ef] border border-[#f5ded5] rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-[#d97251] text-white flex items-center justify-center shrink-0">
+                  <Check className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-extrabold text-[#2d2522]">
+                    Đơn thuốc điện tử đã được mã hóa vào mã QR thành công!
+                  </h4>
+                  <p className="text-[11px] text-[#7a6c65] mt-0.5">
+                    Dược sĩ hoặc bệnh nhân dùng camera điện thoại quét mã QR bên dưới để tra cứu toa thuốc.
+                  </p>
+                </div>
               </div>
 
-              {/* PHONE SCREEN CONTENT */}
-              <div className="flex-1 flex flex-col justify-between pt-10 pb-8 px-5 bg-stone-50 overflow-y-auto">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('doctor')}
+                  className="flex-1 sm:flex-none px-4 py-2 bg-white hover:bg-[#f5ede8] text-[#2d2522] border border-[#ebdcd5] rounded-xl text-xs font-bold transition-all shadow-2xs"
+                >
+                  ← Chỉnh sửa đơn thuốc
+                </button>
+                <button
+                  type="button"
+                  onClick={generatePDF}
+                  className="flex-1 sm:flex-none px-4 py-2 bg-[#d97251] hover:bg-[#c25e3f] text-white rounded-xl text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Tải lại PDF</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Smart Phone Shell Container */}
+            <div className="max-w-md mx-auto">
+              <div className="text-center text-xs font-bold text-[#8c7e77] uppercase tracking-widest mb-3 flex items-center justify-center gap-1.5">
+                <Smartphone className="w-4 h-4 text-[#d97251]" />
+                <span>Giao diện tra cứu khi quét mã QR (Mobile View)</span>
+              </div>
+
+              {/* Khung điện thoại */}
+              <div className="bg-white rounded-[40px] border-[10px] border-stone-900 shadow-2xl relative overflow-hidden flex flex-col justify-between min-h-[640px]">
                 
-                {/* 1. Header Đơn Thuốc Hợp Lệ */}
-                <div className="space-y-4">
-                  <div className="flex flex-col items-center border-b border-orange-100 pb-4 mt-2">
-                    <div className="w-10 h-10 rounded-xl bg-orange-600 flex items-center justify-center text-white shadow-md mb-2">
-                      <Activity className="w-5 h-5" />
+                {/* Camera Notch */}
+                <div className="absolute top-2 left-1/2 -translate-x-1/2 w-32 h-6 bg-stone-900 rounded-full z-40 flex items-center justify-center">
+                  <span className="w-1.5 h-1.5 rounded-full bg-stone-800 mr-2"></span>
+                  <span className="w-3.5 h-1 bg-stone-800 rounded-full"></span>
+                </div>
+
+                {/* PHONE SCREEN CONTENT */}
+                <div className="flex-1 flex flex-col justify-between pt-10 pb-8 px-5 bg-[#faf7f5] overflow-y-auto space-y-4">
+                  
+                  {/* 1. Header Đơn Thuốc Hợp Lệ */}
+                  <div className="flex flex-col items-center border-b border-[#f0e4dd] pb-4 mt-2">
+                    <div className="w-11 h-11 rounded-2xl bg-[#d97251] flex items-center justify-center text-white shadow-md mb-2">
+                      <Activity className="w-6 h-6" />
                     </div>
-                    <h3 className="text-base font-extrabold text-stone-900 tracking-tight">Phòng Khám MediConnect</h3>
+                    <h3 className="text-base font-extrabold text-[#2d2522] tracking-tight">MediConnect Clinic</h3>
                     
                     {/* Badge đã xác thực hợp lệ */}
-                    <div className="mt-2.5 inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200/60 rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-650" />
+                    <div className="mt-2.5 inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200/80 rounded-full px-3 py-1 text-[10px] font-extrabold uppercase tracking-wide">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                       <span>Đơn thuốc điện tử hợp lệ</span>
                     </div>
                   </div>
 
-                  {/* 2. Thông tin bệnh nhân & bác sĩ (Hạn chế tối đa thông tin bảo mật) */}
-                  <div className="bg-white rounded-2xl border border-orange-100 p-4 space-y-3.5 shadow-sm">
+                  {/* 2. QR Code Canvas Display Box */}
+                  <div className="bg-white rounded-2xl border border-[#ebdcd5] p-4 flex flex-col items-center justify-center shadow-xs space-y-2">
+                    <QRCodeCanvas 
+                      value={prescriptionPublicUrl} 
+                      size={150} 
+                      level="H" 
+                      includeMargin={true}
+                    />
+                    <span className="text-[10px] font-bold text-[#8c7e77] uppercase tracking-wider">
+                      Mã tra cứu: {patientInfo.id}
+                    </span>
+                  </div>
+
+                  {/* 3. Thông tin bệnh nhân & bác sĩ */}
+                  <div className="bg-white rounded-2xl border border-[#ebdcd5] p-4 space-y-3 shadow-xs">
                     <div>
-                      <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wide block">Bệnh nhân (Ẩn danh tính)</span>
-                      {/* Tên ẩn một phần theo quy định bảo mật HIPAA */}
-                      <span className="font-extrabold text-stone-850 text-sm mt-0.5 block">
-                        {patientInfo.name.split(' ').map((n, i) => i === patientInfo.name.split(' ').length - 1 ? 'R***' : n).join(' ')}
+                      <span className="text-[10px] font-bold text-[#a89991] uppercase tracking-wide block">Bệnh nhân</span>
+                      <span className="font-extrabold text-[#2d2522] text-sm mt-0.5 block">
+                        {patientInfo.name} ({patientInfo.age} tuổi)
+                      </span>
+                    </div>
+
+                    <div className="border-t border-[#f5ede8] pt-2.5">
+                      <span className="text-[10px] font-bold text-[#a89991] uppercase tracking-wide block">Chẩn đoán</span>
+                      <span className="font-bold text-[#b8583c] text-xs mt-0.5 block">
+                        {aiAnalysis.diagnosis}
                       </span>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-2 border-t border-stone-100 pt-3">
+                    <div className="grid grid-cols-2 gap-2 border-t border-[#f5ede8] pt-2.5">
                       <div>
-                        <span className="text-[9px] font-bold text-stone-400 uppercase tracking-wide block">Bác sĩ kê đơn</span>
-                        <span className="font-bold text-stone-750 text-xs mt-0.5 block">BS. Sarah Chen</span>
+                        <span className="text-[9px] font-bold text-[#a89991] uppercase tracking-wide block">Bác sĩ kê đơn</span>
+                        <span className="font-bold text-[#2d2522] text-xs mt-0.5 block">BS. Sarah Chen</span>
                       </div>
                       <div>
-                        <span className="text-[9px] font-bold text-stone-400 uppercase tracking-wide block">Ngày khám</span>
-                        <span className="font-bold text-stone-750 text-xs mt-0.5 block">{new Date().toLocaleDateString('vi-VN')}</span>
+                        <span className="text-[9px] font-bold text-[#a89991] uppercase tracking-wide block">Ngày khám</span>
+                        <span className="font-bold text-[#2d2522] text-xs mt-0.5 block">{new Date().toLocaleDateString('vi-VN')}</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* 3. Danh sách thuốc phát */}
+                  {/* 4. Danh sách thuốc phát */}
                   <div className="space-y-2.5">
-                    <span className="text-[10px] font-extrabold text-stone-500 uppercase tracking-wide block px-1">Danh Sách Thuốc Cấp Phát</span>
+                    <span className="text-[10px] font-extrabold text-[#7a6c65] uppercase tracking-wide block px-1">
+                      Danh Sách Thuốc Chỉ Định ({medicines.length})
+                    </span>
                     
                     <ul className="space-y-2.5">
                       {medicines.map((m, idx) => (
-                        <li key={idx} className="bg-white p-3.5 rounded-xl border border-stone-200 shadow-sm flex flex-col gap-1.5 relative overflow-hidden">
-                          {/* Badge đánh dấu phát */}
+                        <li key={m.id || idx} className="bg-white p-3.5 rounded-xl border border-[#ebdcd5] shadow-xs flex flex-col gap-1.5 relative overflow-hidden">
                           {isDispensed && (
-                            <div className="absolute right-3 top-3.5 text-emerald-600 bg-emerald-50 rounded-full p-0.5 border border-emerald-100">
+                            <div className="absolute right-3 top-3 text-emerald-600 bg-emerald-50 rounded-full p-0.5 border border-emerald-200">
                               <CheckCircle2 className="w-4 h-4" />
                             </div>
                           )}
-                          <span className="font-extrabold text-stone-850 text-xs block pr-6">
+                          <span className="font-extrabold text-[#2d2522] text-xs block pr-6">
                             {idx + 1}. {m.name}
                           </span>
-                          <div className="flex flex-col gap-0.5 pl-3 border-l-2 border-orange-350">
-                            <span className="text-orange-950 font-bold text-[10px] block">
+                          <div className="flex flex-col gap-0.5 pl-3 border-l-2 border-[#d97251]">
+                            <span className="text-[#b8583c] font-bold text-[10px] block">
                               Liều lượng: {m.dosage}
                             </span>
-                            <span className="text-stone-500 text-[10px] font-medium block">
-                              Cách dùng: {m.usage}
+                            <span className="text-[#6e6059] text-[10px] font-medium block">
+                              Cách dùng: {m.instructions}
                             </span>
                           </div>
                         </li>
                       ))}
                     </ul>
                   </div>
-                </div>
 
-                {/* 4. Footer Phát Thuốc */}
-                <div className="mt-8 border-t border-stone-100 pt-4 space-y-3">
-                  {isDispensed ? (
-                    <div className="bg-emerald-50 border border-emerald-250 rounded-xl p-3.5 text-center text-emerald-800 space-y-1 animate-pulse">
-                      <span className="text-xs font-bold block">✓ ĐÃ CẤP PHÁT THUỐC THÀNH CÔNG</span>
-                      <p className="text-[9px] text-emerald-650 font-semibold">
-                        Ghi nhận phát thuốc bởi dược sĩ vào lúc: {new Date().toLocaleTimeString()}
-                      </p>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setIsDispensed(true)}
-                      className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs py-3 px-4 rounded-xl transition-all shadow-md shadow-orange-600/20 active:scale-[0.98] flex items-center justify-center gap-1.5"
-                    >
-                      <CheckCircle2 className="w-4 h-4" />
-                      Xác nhận đã cấp phát thuốc
-                    </button>
-                  )}
-                  
-                  {isDispensed && (
-                    <button
-                      type="button"
-                      onClick={() => setIsDispensed(false)}
-                      className="w-full bg-stone-100 hover:bg-stone-200 text-stone-500 font-bold text-[10px] py-1.5 rounded-lg transition-colors border border-stone-200"
-                    >
-                      Hủy trạng thái cấp phát
-                    </button>
-                  )}
-                </div>
+                  {/* 5. Footer Dược Sĩ Cấp Phát */}
+                  <div className="border-t border-[#f0e4dd] pt-4 space-y-2.5">
+                    {isDispensed ? (
+                      <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3.5 text-center text-emerald-800 space-y-1">
+                        <span className="text-xs font-bold block flex items-center justify-center gap-1">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                          ĐÃ CẤP PHÁT THUỐC THÀNH CÔNG
+                        </span>
+                        <p className="text-[9px] text-emerald-700 font-semibold">
+                          Ghi nhận vào lúc: {new Date().toLocaleTimeString('vi-VN')}
+                        </p>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setIsDispensed(true)}
+                        className="w-full bg-[#d97251] hover:bg-[#c25e3f] text-white font-bold text-xs py-3 px-4 rounded-xl transition-all shadow-md shadow-[#d97251]/20 active:scale-95 flex items-center justify-center gap-1.5"
+                      >
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>Xác nhận đã cấp phát thuốc</span>
+                      </button>
+                    )}
+                    
+                    {isDispensed && (
+                      <button
+                        type="button"
+                        onClick={() => setIsDispensed(false)}
+                        className="w-full bg-white hover:bg-stone-50 text-[#8c7e77] font-bold text-[10px] py-2 rounded-lg transition-colors border border-[#ebdcd5]"
+                      >
+                        Hủy trạng thái cấp phát
+                      </button>
+                    )}
+                  </div>
 
-              </div>
-              
-              {/* Home Indicator */}
-              <div className="bg-stone-900 py-2 flex justify-center">
-                <span className="w-24 h-1 bg-stone-600 rounded-full"></span>
+                </div>
+                
+                {/* Home Indicator */}
+                <div className="bg-stone-900 py-2 flex justify-center">
+                  <span className="w-24 h-1 bg-stone-600 rounded-full"></span>
+                </div>
               </div>
             </div>
+
           </div>
         )}
 

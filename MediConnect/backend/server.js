@@ -9,9 +9,7 @@ const startReminderJob = require('./cronjobs/reminderJob');
 const app = express();
 const PORT = process.env.PORT || 5001;
 
-// Khởi chạy cronjob nhắc nhở lịch khám tự động
 startReminderJob();
-
 
 app.use(cors());
 app.use(express.json());

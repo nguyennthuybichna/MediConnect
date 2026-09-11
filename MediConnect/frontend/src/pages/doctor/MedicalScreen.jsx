@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import useAuth from '../../hooks/useAuth';
 import api from '../../services/api';
 import PrescriptionExport from '../../components/PrescriptionExport';
+import AISummaryCard from '../../components/AISummaryCard';
 import {
   LayoutDashboard,
   Users,
@@ -999,6 +1000,19 @@ export default function MedicalScreen() {
               <span>Cài đặt hồ sơ</span>
             </div>
           </button>
+
+          <a
+            href="/prescription-prototype"
+            className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-bold text-[#6B5E59] hover:bg-[#F7ECE8] hover:text-[#843F2E] transition-all"
+          >
+            <div className="flex items-center gap-3">
+              <FileText className="w-4.5 h-4.5 text-[#D3765F]" />
+              <span>Mẫu Đơn Thuốc & QR</span>
+            </div>
+            <span className="bg-[#FBEEE9] text-[#D3765F] text-[9px] px-1.5 py-0.5 rounded font-bold border border-[#F2DED7]">
+              MỚI
+            </span>
+          </a>
         </nav>
 
         {/* Sidebar Footer User Info */}
@@ -1327,6 +1341,12 @@ export default function MedicalScreen() {
                   </button>
                 </div>
               </div>
+
+              {/* AI Patient Summary Card (Top Banner) */}
+              <AISummaryCard 
+                appointmentId={activePatient?.rawAppointmentId} 
+                patient={activePatient} 
+              />
 
               {/* Two Column Layout */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -1900,6 +1920,16 @@ export default function MedicalScreen() {
                   )}
                 </div>
               </div>
+
+              {/* AI Patient Summary Card (Top Banner with Quick Insert to Doctor Notes) */}
+              <AISummaryCard 
+                appointmentId={activePatient?.rawAppointmentId} 
+                patient={activePatient}
+                onInsertToNotes={(summaryText) => {
+                  setFormNotes(prev => prev ? `${prev}\n\n[Tiền sử bệnh lý AI tóm tắt]:\n${summaryText}` : `[Tiền sử bệnh lý AI tóm tắt]:\n${summaryText}`);
+                  showToast("Đã chèn tóm tắt bệnh sử vào ô ghi chú lâm sàng!");
+                }}
+              />
 
               {/* Two Column Form Layout */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

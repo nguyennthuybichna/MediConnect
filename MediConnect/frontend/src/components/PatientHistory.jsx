@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import { Clock, CheckCircle, AlertCircle } from 'lucide-react';
 
 const PatientHistory = () => {
@@ -11,12 +11,7 @@ const PatientHistory = () => {
     const fetchHistory = async () => {
       try {
         setLoading(true);
-        const token = localStorage.getItem('token');
-        const response = await axios.get('http://localhost:5001/api/diagnosis/history', {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
+        const response = await api.get('/diagnosis/history');
         
         if (Array.isArray(response.data)) {
           setHistory(response.data);
