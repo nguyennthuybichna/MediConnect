@@ -11,6 +11,8 @@ const axiosClient = axios.create({
   timeout: 15000,
 });
 
+console.log('🔗 [MediConnect] Active Backend API URL:', baseURL);
+
 axiosClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
