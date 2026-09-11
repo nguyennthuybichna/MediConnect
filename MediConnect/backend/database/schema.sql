@@ -21,6 +21,21 @@ CREATE TABLE IF NOT EXISTS `Users` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =========================================================================
+-- 1.1 Bảng Pending_Registrations (Đăng ký tạm chờ xác thực Email)
+-- =========================================================================
+CREATE TABLE IF NOT EXISTS `Pending_Registrations` (
+  `pending_id` INT AUTO_INCREMENT PRIMARY KEY,
+  `email` VARCHAR(255) NOT NULL UNIQUE,
+  `password_hash` VARCHAR(255) NOT NULL,
+  `full_name` VARCHAR(255) NOT NULL,
+  `role` ENUM('admin', 'doctor', 'patient') NOT NULL DEFAULT 'patient',
+  `specialty` VARCHAR(255) DEFAULT NULL,
+  `otp` VARCHAR(10) NOT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `expires_at` DATETIME NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =========================================================================
 -- 2. Bảng MedicalRecord (Lưu lịch sử y tế của bệnh nhân - 1-1 với Users)
 -- =========================================================================
 CREATE TABLE IF NOT EXISTS `MedicalRecord` (

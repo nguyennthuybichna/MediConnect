@@ -62,11 +62,12 @@ const register = async (req, res) => {
     // Tạo mã OTP xác thực email 6 chữ số ngẫu nhiên
     const emailVerificationToken = Math.floor(100000 + Math.random() * 900000).toString();
 
-    const sql = `
-      INSERT INTO Users (email, password_hash, full_name, role, specialty, verification_token)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `;
-    const [result] = await db.execute(sql, [trimmedEmail, passwordHash, trimmedFullName, userRole, userSpecialty, emailVerificationToken]);
+    // Lưu vào bảng tạm Pending_Registrations (CHƯA LƯU VÀO Users cho tới khi xác thực email thành công)
+    await db.execute('DELETE FROM Pending_Registrations WHERE email = ?', [trimmedEmail]);
+    await db.execute(`
+      INSERT INTO Pending_Registrations (email, password_hash, full_name, role, specialty, otp, expires_at)
+      VALUES (?, ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 24 HOUR))
+    `, [trimmedEmail, passwordHash, trimmedFullName, userRole, userSpecialty, emailVerificationToken]);
 
     console.log(`🔑 [DEBUG] Mã OTP đăng ký của email ${trimmedEmail} là: ${emailVerificationToken}`);
 
@@ -76,13 +77,13 @@ const register = async (req, res) => {
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #f5eae6; border-radius: 15px;">
         <h2 style="color: #843f2e; text-align: center;">Chào mừng bạn đến với MediConnect!</h2>
         <p>Xin chào <strong>${trimmedFullName}</strong>,</p>
-        <p>Cảm ơn bạn đã đăng ký tài khoản. Vui lòng sử dụng mã xác thực bên dưới để kích hoạt tài khoản của bạn:</p>
+        <p>Cảm ơn bạn đã đăng ký tài khoản. Vui lòng sử dụng mã xác thực bên dưới để kích hoạt và hoàn tất tạo tài khoản của bạn:</p>
         <div style="text-align: center; margin: 30px 0;">
           <span style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #843f2e; background-color: #fdfbfb; padding: 15px 30px; border-radius: 10px; border: 1px dashed #d3765f;">
             ${emailVerificationToken}
           </span>
         </div>
-        <p style="font-size: 12px; color: #666; text-align: center;">Mã xác thực này có hiệu lực trong vòng 24 giờ.</p>
+        <p style="font-size: 12px; color: #666; text-align: center;">Mã xác thực này có hiệu lực trong vòng 24 giờ. Tài khoản chỉ được kích hoạt vào hệ thống sau khi nhập đúng mã.</p>
         <p>Trân trọng,<br/>Đội ngũ phát triển MediConnect</p>
       </div>
     `;
@@ -95,15 +96,8 @@ const register = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: 'Đăng ký tài khoản thành công. Vui lòng kiểm tra email để lấy mã xác thực.',
-      user_id: result.insertId,
-      user: {
-        id: result.insertId,
-        email: trimmedEmail,
-        full_name: trimmedFullName,
-        role: userRole,
-        specialty: userSpecialty
-      }
+      message: 'Đăng ký bước 1 thành công. Vui lòng kiểm tra email để lấy mã xác thực kích hoạt tài khoản.',
+      email: trimmedEmail
     });
 
   } catch (error) {
@@ -199,28 +193,60 @@ const verifyEmail = async (req, res) => {
       });
     }
 
-    let users;
-    if (email) {
-      [users] = await db.execute('SELECT user_id FROM Users WHERE verification_token = ? AND email = ?', [token, email]);
+    const trimmedToken = String(token).trim();
+    const trimmedEmail = email ? String(email).trim() : null;
+
+    // Tìm thông tin đăng ký chờ xác thực trong bảng Pending_Registrations
+    let sql, params;
+    if (trimmedEmail) {
+      sql = 'SELECT * FROM Pending_Registrations WHERE otp = ? AND email = ? AND expires_at > NOW()';
+      params = [trimmedToken, trimmedEmail];
     } else {
-      [users] = await db.execute('SELECT user_id FROM Users WHERE verification_token = ?', [token]);
+      sql = 'SELECT * FROM Pending_Registrations WHERE otp = ? AND expires_at > NOW()';
+      params = [trimmedToken];
     }
 
-    if (users.length === 0) {
+    const [pendingUsers] = await db.execute(sql, params);
+
+    if (pendingUsers.length === 0) {
+      if (trimmedEmail) {
+        const [existing] = await db.execute('SELECT user_id FROM Users WHERE email = ?', [trimmedEmail]);
+        if (existing.length > 0) {
+          return res.status(200).json({
+            success: true,
+            message: 'Tài khoản này đã được xác thực trước đó. Bạn có thể đăng nhập ngay!'
+          });
+        }
+      }
       return res.status(400).json({
         error: 'Mã xác thực không hợp lệ hoặc đã hết hạn.'
       });
     }
 
-    const user = users[0];
-    await db.execute(
-      'UPDATE Users SET is_email_verified = 1, verification_token = NULL WHERE user_id = ?',
-      [user.user_id]
-    );
+    const pending = pendingUsers[0];
+
+    // CHÍNH THỨC TẠO TÀI KHOẢN VÀO BẢNG Users SAU KHI XÁC THỰC EMAIL THÀNH CÔNG
+    const [existing] = await db.execute('SELECT user_id FROM Users WHERE email = ?', [pending.email]);
+    let userId;
+
+    if (existing.length > 0) {
+      userId = existing[0].user_id;
+      await db.execute('UPDATE Users SET is_email_verified = 1 WHERE user_id = ?', [userId]);
+    } else {
+      const [insertResult] = await db.execute(`
+        INSERT INTO Users (email, password_hash, full_name, role, specialty, is_email_verified)
+        VALUES (?, ?, ?, ?, ?, 1)
+      `, [pending.email, pending.password_hash, pending.full_name, pending.role, pending.specialty]);
+      userId = insertResult.insertId;
+    }
+
+    // Xóa dữ liệu đăng ký tạm sau khi đã tạo xong tài khoản
+    await db.execute('DELETE FROM Pending_Registrations WHERE email = ?', [pending.email]);
 
     return res.status(200).json({
       success: true,
-      message: 'Xác thực email thành công! Bạn có thể đăng nhập ngay bây giờ.'
+      message: 'Xác thực email thành công! Tài khoản của bạn đã được khởi tạo và sẵn sàng đăng nhập.',
+      user_id: userId
     });
 
   } catch (error) {
@@ -376,40 +402,46 @@ const resendVerification = async (req, res) => {
       return res.status(400).json({ error: 'Vui lòng cung cấp địa chỉ email.' });
     }
 
-    const [users] = await db.execute('SELECT user_id, full_name, is_email_verified FROM Users WHERE email = ?', [email]);
-    if (users.length === 0) {
-      return res.status(404).json({ error: 'Email không tồn tại trong hệ thống.' });
+    const trimmedEmail = email.trim();
+
+    const [users] = await db.execute('SELECT user_id, full_name, is_email_verified FROM Users WHERE email = ?', [trimmedEmail]);
+    if (users.length > 0 && users[0].is_email_verified === 1) {
+      return res.status(400).json({ error: 'Tài khoản này đã được xác thực email từ trước.' });
     }
 
-    const user = users[0];
-    if (user.is_email_verified === 1) {
-      return res.status(400).json({ error: 'Tài khoản này đã được xác thực email.' });
+    const [pending] = await db.execute('SELECT * FROM Pending_Registrations WHERE email = ?', [trimmedEmail]);
+    if (pending.length === 0) {
+      return res.status(404).json({ error: 'Không tìm thấy thông tin đăng ký chờ xác thực. Vui lòng tiến hành đăng ký lại.' });
     }
 
+    const pendingUser = pending[0];
     const emailVerificationToken = Math.floor(100000 + Math.random() * 900000).toString();
+
     await db.execute(
-      'UPDATE Users SET verification_token = ? WHERE user_id = ?',
-      [emailVerificationToken, user.user_id]
+      'UPDATE Pending_Registrations SET otp = ?, expires_at = DATE_ADD(NOW(), INTERVAL 24 HOUR) WHERE email = ?',
+      [emailVerificationToken, trimmedEmail]
     );
+
+    console.log(`🔑 [DEBUG] Mã OTP mới của email ${trimmedEmail} là: ${emailVerificationToken}`);
 
     const mailSubject = 'MediConnect - Gửi lại mã xác thực tài khoản';
     const mailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #f5eae6; border-radius: 15px;">
         <h2 style="color: #843f2e; text-align: center;">Xác thực tài khoản MediConnect</h2>
-        <p>Xin chào <strong>${user.full_name}</strong>,</p>
+        <p>Xin chào <strong>${pendingUser.full_name}</strong>,</p>
         <p>Chúng tôi đã nhận được yêu cầu gửi lại mã xác thực. Dưới đây là mã xác thực mới của bạn:</p>
         <div style="text-align: center; margin: 30px 0;">
           <span style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #843f2e; background-color: #fdfbfb; padding: 15px 30px; border-radius: 10px; border: 1px dashed #d3765f;">
             ${emailVerificationToken}
           </span>
         </div>
-        <p style="font-size: 12px; color: #666; text-align: center;">Mã xác thực này có hiệu lực trong vòng 24 giờ.</p>
+        <p style="font-size: 12px; color: #666; text-align: center;">Mã xác thực này có hiệu lực trong vòng 24 giờ. Tài khoản chỉ được kích hoạt sau khi xác thực thành công.</p>
         <p>Trân trọng,<br/>Đội ngũ phát triển MediConnect</p>
       </div>
     `;
 
     try {
-      await sendEmail(email, mailSubject, mailHtml);
+      await sendEmail(trimmedEmail, mailSubject, mailHtml);
     } catch (mailError) {
       console.error('⚠️ Gửi lại email xác thực thất bại:', mailError.message);
     }

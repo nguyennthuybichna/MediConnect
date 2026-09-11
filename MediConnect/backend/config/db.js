@@ -19,10 +19,27 @@ pool.getConnection()
       await connection.query("ALTER TABLE AI_Predictions ADD COLUMN chat_history TEXT DEFAULT NULL");
       console.log('🌱 Đã đồng bộ cột chat_history vào bảng AI_Predictions.');
     } catch (err) {
-      // Bỏ qua lỗi 1060 nếu cột đã tồn tại
       if (err.errno !== 1060 && err.code !== 'ER_DUP_FIELDNAME') {
         console.error('❌ Lỗi bổ sung cột chat_history:', err.message);
       }
+    }
+    try {
+      await connection.query(`
+        CREATE TABLE IF NOT EXISTS Pending_Registrations (
+          pending_id INT AUTO_INCREMENT PRIMARY KEY,
+          email VARCHAR(255) NOT NULL UNIQUE,
+          password_hash VARCHAR(255) NOT NULL,
+          full_name VARCHAR(255) NOT NULL,
+          role ENUM('admin', 'doctor', 'patient') NOT NULL DEFAULT 'patient',
+          specialty VARCHAR(255) DEFAULT NULL,
+          otp VARCHAR(10) NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          expires_at DATETIME NOT NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+      `);
+      console.log('🌱 Đã đồng bộ bảng Pending_Registrations.');
+    } catch (err) {
+      console.error('❌ Lỗi tạo bảng Pending_Registrations:', err.message);
     }
     connection.release();
   })
