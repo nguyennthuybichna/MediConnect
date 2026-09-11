@@ -27,6 +27,8 @@
 
 # Binary files (prevent Git from modifying line endings)
 *.onnx binary
+*.data filter=lfs diff=lfs merge=lfs -text
+*.onnx.data filter=lfs diff=lfs merge=lfs -text
 *.png binary
 *.jpg binary
 *.jpeg binary
