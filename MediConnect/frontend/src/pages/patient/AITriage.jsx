@@ -187,12 +187,12 @@ const AITriage = () => {
             localStorage.setItem('latest_prediction_id', prediction.prediction_id);
           }
         } catch (saveErr) {
-          console.error('⚠️ Không thể lưu lịch sử chẩn đoán vào CSDL:', saveErr);
+          console.error('Không thể lưu lịch sử chẩn đoán vào CSDL:', saveErr);
         }
       }
 
     } catch (err) {
-      console.error('❌ Lỗi chẩn đoán:', err);
+      console.error('Lỗi chẩn đoán:', err);
       setMessages(prev => [
         ...prev,
         {

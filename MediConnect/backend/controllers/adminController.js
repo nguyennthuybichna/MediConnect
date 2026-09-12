@@ -15,7 +15,7 @@ const getUsers = async (req, res) => {
       users
     });
   } catch (error) {
-    console.error('❌ Lỗi tại adminController.getUsers:', error.message);
+    console.error('Lỗi tại adminController.getUsers:', error.message);
     return res.status(500).json({
       success: false,
       error: 'Lỗi hệ thống khi truy vấn danh sách người dùng.'
@@ -68,7 +68,7 @@ const approveDoctor = async (req, res) => {
       message: 'Phê duyệt tài khoản Bác sĩ thành công. Tài khoản hiện đã sẵn sàng hoạt động.'
     });
   } catch (error) {
-    console.error('❌ Lỗi tại adminController.approveDoctor:', error.message);
+    console.error('Lỗi tại adminController.approveDoctor:', error.message);
     return res.status(500).json({
       success: false,
       error: 'Lỗi hệ thống khi phê duyệt tài khoản bác sĩ.'

@@ -14,13 +14,13 @@ const pool = mysql.createPool({
 
 pool.getConnection()
   .then(async connection => {
-    console.log('✅ Kết nối CSDL MySQL thành công!');
+    console.log('Kết nối CSDL MySQL thành công!');
     try {
       await connection.query("ALTER TABLE AI_Predictions ADD COLUMN chat_history TEXT DEFAULT NULL");
-      console.log('🌱 Đã đồng bộ cột chat_history vào bảng AI_Predictions.');
+      console.log('Đã đồng bộ cột chat_history vào bảng AI_Predictions.');
     } catch (err) {
       if (err.errno !== 1060 && err.code !== 'ER_DUP_FIELDNAME') {
-        console.error('❌ Lỗi bổ sung cột chat_history:', err.message);
+        console.error('Lỗi bổ sung cột chat_history:', err.message);
       }
     }
     try {
@@ -37,14 +37,14 @@ pool.getConnection()
           expires_at DATETIME NOT NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
       `);
-      console.log('🌱 Đã đồng bộ bảng Pending_Registrations.');
+      console.log('Đã đồng bộ bảng Pending_Registrations.');
     } catch (err) {
-      console.error('❌ Lỗi tạo bảng Pending_Registrations:', err.message);
+      console.error('Lỗi tạo bảng Pending_Registrations:', err.message);
     }
     connection.release();
   })
   .catch(err => {
-    console.error('❌ Lỗi kết nối CSDL MySQL:', err.message);
+    console.error('Lỗi kết nối CSDL MySQL:', err.message);
   });
 
 module.exports = pool;

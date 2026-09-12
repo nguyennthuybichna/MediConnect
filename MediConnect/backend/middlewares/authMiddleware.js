@@ -26,7 +26,7 @@ const verifyToken = (req, res, next) => {
     req.user = decoded;
     next();
   } catch (error) {
-    console.error('🔒 Auth Middleware Error:', error.message);
+    console.error('Auth Middleware Error:', error.message);
 
     return res.status(401).json({
       success: false,
@@ -45,7 +45,7 @@ const authorizeRoles = (...allowedRoles) => {
       });
     }
 
-    console.log(`🔒 [Auth RBAC] Yêu cầu role: [${allowedRoles.join(', ')}] | Role của User hiện tại: [${req.user.role}]`);
+    console.log(`[Auth RBAC] Yêu cầu role: [${allowedRoles.join(', ')}] | Role của User hiện tại: [${req.user.role}]`);
     const hasRole = allowedRoles.includes(req.user.role);
     if (!hasRole) {
       return res.status(403).json({

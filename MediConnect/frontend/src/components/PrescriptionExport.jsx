@@ -131,10 +131,10 @@ const PrescriptionExport = ({ prescriptionData, appointment_id }) => {
           doc.setTextColor(150, 150, 150);
           doc.text('Quét QR tra cứu đơn thuốc', 160, finalY + 28, { align: 'left' });
         } catch (qrError) {
-          console.error('⚠️ Lỗi khi trích xuất hoặc nhúng mã QR vào PDF:', qrError.message);
+          console.error('Lỗi khi trích xuất hoặc nhúng mã QR vào PDF:', qrError.message);
         }
       } else {
-        console.warn('⚠️ Không tìm thấy canvas mã QR để nhúng vào đơn thuốc PDF.');
+        console.warn('Không tìm thấy canvas mã QR để nhúng vào đơn thuốc PDF.');
       }
 
       const patientNameSafe = (data.patientName || 'BenhNhan').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').replace(/\s+/g, '_');
@@ -153,7 +153,7 @@ const PrescriptionExport = ({ prescriptionData, appointment_id }) => {
         doc.save(fileName);
       }
     } catch (pdfError) {
-      console.error('❌ Lỗi nghiêm trọng khi tạo PDF đơn thuốc:', pdfError);
+      console.error('Lỗi nghiêm trọng khi tạo PDF đơn thuốc:', pdfError);
       alert('Đã xảy ra sự cố trong quá trình xuất đơn thuốc PDF. Vui lòng liên hệ quản trị viên.');
     }
   };

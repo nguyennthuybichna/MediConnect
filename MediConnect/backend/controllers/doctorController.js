@@ -10,7 +10,7 @@ const getDoctors = async (req, res) => {
       doctors: rows
     });
   } catch (error) {
-    console.error('❌ Lỗi lấy danh sách bác sĩ:', error.message);
+    console.error('Lỗi lấy danh sách bác sĩ:', error.message);
     return res.status(500).json({
       error: 'Lỗi hệ thống khi lấy danh sách bác sĩ.'
     });
@@ -92,7 +92,7 @@ const getAppointmentDetail = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Lỗi chi tiết lịch hẹn khám:', error.message);
+    console.error('Lỗi chi tiết lịch hẹn khám:', error.message);
     return res.status(500).json({
       error: 'Lỗi hệ thống khi lấy thông tin chi tiết lịch hẹn.'
     });
@@ -156,7 +156,7 @@ const submitDiagnosis = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Lỗi cập nhật chẩn đoán lâm sàng:', error.message);
+    console.error('Lỗi cập nhật chẩn đoán lâm sàng:', error.message);
     return res.status(500).json({
       error: 'Lỗi hệ thống khi cập nhật kết quả chẩn đoán.'
     });
@@ -204,7 +204,7 @@ const getDoctorAppointments = async (req, res) => {
       appointments
     });
   } catch (error) {
-    console.error('❌ Lỗi tại doctorController.getDoctorAppointments:', error.message);
+    console.error('Lỗi tại doctorController.getDoctorAppointments:', error.message);
     return res.status(500).json({
       success: false,
       error: 'Lỗi hệ thống khi lấy danh sách lịch khám của bác sĩ.'

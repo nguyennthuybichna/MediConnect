@@ -83,7 +83,7 @@ const AISummaryCard = ({ appointmentId, patient, onInsertToNotes }) => {
       setHistoryCount(patient?.history?.length || (patient?.chronicConditions?.length ? 2 : 1));
       setIsLoading(false);
     } catch (err) {
-      console.warn('⚠️ Không thể tải AI Summary từ API, sử dụng thuật toán tổng hợp nội bộ:', err.message);
+      console.warn('Không thể tải AI Summary từ API, sử dụng thuật toán tổng hợp nội bộ:', err.message);
       const localSummary = generateLocalFallbackSummary(patient);
       setSummary(localSummary);
       setHistoryCount(patient?.history?.length || 1);

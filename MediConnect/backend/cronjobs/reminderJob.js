@@ -5,7 +5,7 @@ const { sendReminderEmail } = require('../utils/emailService');
 const startReminderJob = () => {
 
   cron.schedule('0 * * * *', async () => {
-    console.log('⏰ [Cronjob] Đang kiểm tra danh sách lịch khám sắp diễn ra trong 24 giờ tới...');
+    console.log('[Cronjob] Đang kiểm tra danh sách lịch khám sắp diễn ra trong 24 giờ tới...');
 
     try {
 
@@ -29,11 +29,11 @@ const startReminderJob = () => {
       const [appointments] = await db.execute(sql);
 
       if (!appointments || appointments.length === 0) {
-        console.log('ℹ️ [Cronjob] Không có lịch hẹn nào cần gửi nhắc nhở tại thời điểm này.');
+        console.log('[Cronjob] Không có lịch hẹn nào cần gửi nhắc nhở tại thời điểm này.');
         return;
       }
 
-      console.log(`🔍 [Cronjob] Tìm thấy ${appointments.length} lịch khám cần gửi nhắc nhở.`);
+      console.log(`[Cronjob] Tìm thấy ${appointments.length} lịch khám cần gửi nhắc nhở.`);
 
       for (const app of appointments) {
         try {
@@ -50,17 +50,17 @@ const startReminderJob = () => {
             [app.appointment_id]
           );
 
-          console.log(`✅ [Cronjob] Đã gửi nhắc nhở & cập nhật thành công cho Appointment ID: ${app.appointment_id}`);
+          console.log(`[Cronjob] Đã gửi nhắc nhở & cập nhật thành công cho Appointment ID: ${app.appointment_id}`);
         } catch (emailErr) {
-          console.error(`❌ [Cronjob] Lỗi khi xử lý gửi email/cập nhật cho Appointment ID ${app.appointment_id}:`, emailErr.message);
+          console.error(`[Cronjob] Lỗi khi xử lý gửi email/cập nhật cho Appointment ID ${app.appointment_id}:`, emailErr.message);
         }
       }
     } catch (dbErr) {
-      console.error('❌ [Cronjob] Lỗi truy vấn cơ sở dữ liệu nhắc lịch khám:', dbErr.message);
+      console.error('[Cronjob] Lỗi truy vấn cơ sở dữ liệu nhắc lịch khám:', dbErr.message);
     }
   });
 
-  console.log('📅 [Cronjob] Tiến trình tự động nhắc nhở lịch khám hàng giờ đã được kích hoạt thành công.');
+  console.log('[Cronjob] Tiến trình tự động nhắc nhở lịch khám hàng giờ đã được kích hoạt thành công.');
 };
 
 module.exports = startReminderJob;

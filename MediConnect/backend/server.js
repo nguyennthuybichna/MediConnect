@@ -25,5 +25,5 @@ app.get('/api/health', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server đang chạy trên port: http://localhost:${PORT}`);
+  console.log(`Server đang chạy trên port: http://localhost:${PORT}`);
 });

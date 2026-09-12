@@ -77,7 +77,7 @@ const createDiagnosis = async (req, res) => {
           : aiConfidence;
       }
     } catch (apiError) {
-      console.error('🔒 FastAPI Connection Error:', apiError.message);
+      console.error('FastAPI Connection Error:', apiError.message);
 
       if (apiError.code === 'ECONNREFUSED' || apiError.code === 'ETIMEDOUT') {
         return res.status(503).json({
@@ -104,7 +104,7 @@ const createDiagnosis = async (req, res) => {
          VALUES (?, NULL, NULL, NULL, NULL, NULL)`,
         [patient_id]
       );
-      console.log(`🌱 Đã tự động tạo hồ sơ bệnh án liên kết cho bệnh nhân ID: ${patient_id}`);
+      console.log(`Đã tự động tạo hồ sơ bệnh án liên kết cho bệnh nhân ID: ${patient_id}`);
     }
 
     const chatHistory = req.body.chat_history ? JSON.stringify(req.body.chat_history) : null;
@@ -129,7 +129,7 @@ const createDiagnosis = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Lỗi tại diagnosisController.createDiagnosis:', error.message);
+    console.error('Lỗi tại diagnosisController.createDiagnosis:', error.message);
     return res.status(500).json({
       success: false,
       error: 'Lỗi hệ thống nội bộ khi thực hiện chẩn đoán triệu chứng.'
@@ -169,7 +169,7 @@ const getDiagnosisHistory = async (req, res) => {
       data: rows
     });
   } catch (error) {
-    console.error('❌ Lỗi tại diagnosisController.getDiagnosisHistory:', error.message);
+    console.error('Lỗi tại diagnosisController.getDiagnosisHistory:', error.message);
     return res.status(500).json({
       success: false,
       error: 'Lỗi hệ thống nội bộ khi lấy lịch sử chẩn đoán.'
@@ -217,14 +217,14 @@ const chatWithMediConnect = async (req, res) => {
         throw new Error('Không nhận được phản hồi từ AI.');
       }
     } catch (apiError) {
-      console.error('🔒 FastAPI /chat Connection Error:', apiError.message);
+      console.error('FastAPI /chat Connection Error:', apiError.message);
       return res.status(200).json({
         success: true,
         reply: 'Tôi hiện tại đang bảo trì. Vui lòng đặt lịch khám để được bác sĩ tư vấn trực tiếp.'
       });
     }
   } catch (error) {
-    console.error('❌ Lỗi tại diagnosisController.chatWithMediConnect:', error.message);
+    console.error('Lỗi tại diagnosisController.chatWithMediConnect:', error.message);
     return res.status(500).json({
       success: false,
       error: 'Lỗi hệ thống nội bộ khi trò chuyện với AI.'
@@ -258,7 +258,7 @@ const getDiagnosisHistoryByPatientId = async (req, res) => {
       records: rows
     });
   } catch (error) {
-    console.error('❌ Lỗi tại diagnosisController.getDiagnosisHistoryByPatientId:', error.message);
+    console.error('Lỗi tại diagnosisController.getDiagnosisHistoryByPatientId:', error.message);
     return res.status(500).json({
       error: 'Lỗi hệ thống nội bộ khi lấy lịch sử chẩn đoán của bệnh nhân.'
     });

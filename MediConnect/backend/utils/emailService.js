@@ -18,12 +18,12 @@ const sendEmail = async (to, subject, htmlContent) => {
       html: htmlContent
     };
 
-    console.log(`✉️ Đang gửi email tới: ${to}...`);
+    console.log(`Đang gửi email tới: ${to}...`);
     const info = await transporter.sendMail(mailOptions);
-    console.log(`✅ Email đã được gửi thành công tới ${to}. MessageId: ${info.messageId}`);
+    console.log(`Email đã được gửi thành công tới ${to}. MessageId: ${info.messageId}`);
     return info;
   } catch (error) {
-    console.error(`❌ Lỗi chi tiết khi gửi email tới ${to}:`, error);
+    console.error(`Lỗi chi tiết khi gửi email tới ${to}:`, error);
     throw error;
   }
 };

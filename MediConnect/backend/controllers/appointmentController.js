@@ -60,7 +60,7 @@ const getDoctorAppointments = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Lỗi truy vấn lịch hẹn bác sĩ (getDoctorAppointments):', error.message);
+    console.error('Lỗi truy vấn lịch hẹn bác sĩ (getDoctorAppointments):', error.message);
     return res.status(500).json({
       error: 'Lỗi máy chủ nội bộ khi lấy danh sách lịch hẹn.'
     });
@@ -151,7 +151,7 @@ const createAppointment = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Lỗi tại appointmentController.createAppointment:', error.message);
+    console.error('Lỗi tại appointmentController.createAppointment:', error.message);
     return res.status(500).json({
       error: 'Lỗi hệ thống nội bộ khi đặt lịch hẹn khám.'
     });
@@ -196,7 +196,7 @@ const getPatientHistory = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Lỗi truy vấn lịch sử bệnh án (getPatientHistory):', error.message);
+    console.error('Lỗi truy vấn lịch sử bệnh án (getPatientHistory):', error.message);
     return res.status(500).json({
       error: 'Lỗi máy chủ nội bộ khi lấy danh sách lịch sử bệnh án.'
     });
@@ -235,7 +235,7 @@ const getAllAppointments = async (req, res) => {
       appointments: rows
     });
   } catch (error) {
-    console.error('❌ Lỗi tại appointmentController.getAllAppointments:', error.message);
+    console.error('Lỗi tại appointmentController.getAllAppointments:', error.message);
     return res.status(500).json({
       error: 'Lỗi hệ thống khi lấy danh sách toàn bộ bệnh án.'
     });
@@ -266,7 +266,7 @@ const getBookedSlots = async (req, res) => {
       bookedSlots
     });
   } catch (error) {
-    console.error('❌ Lỗi tại appointmentController.getBookedSlots:', error.message);
+    console.error('Lỗi tại appointmentController.getBookedSlots:', error.message);
     return res.status(500).json({
       error: 'Lỗi hệ thống khi lấy danh sách giờ đã đặt.'
     });
@@ -347,7 +347,7 @@ const getAppointmentAISummary = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Lỗi tại appointmentController.getAppointmentAISummary:', error.message);
+    console.error('Lỗi tại appointmentController.getAppointmentAISummary:', error.message);
     return res.status(500).json({
       success: false,
       error: 'Lỗi máy chủ nội bộ khi tạo tóm tắt bệnh sử AI.'

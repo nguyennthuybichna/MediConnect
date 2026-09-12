@@ -58,7 +58,7 @@ const register = async (req, res) => {
       VALUES (?, ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 24 HOUR))
     `, [trimmedEmail, passwordHash, trimmedFullName, userRole, userSpecialty, emailVerificationToken]);
 
-    console.log(`🔑 [DEBUG] Mã OTP đăng ký của email ${trimmedEmail} là: ${emailVerificationToken}`);
+    console.log(`[DEBUG] Mã OTP đăng ký của email ${trimmedEmail} là: ${emailVerificationToken}`);
 
     const mailSubject = 'MediConnect - Mã xác thực tài khoản';
     const mailHtml = `
@@ -79,7 +79,7 @@ const register = async (req, res) => {
     try {
       await sendEmail(trimmedEmail, mailSubject, mailHtml);
     } catch (mailError) {
-      console.error('⚠️ Gửi email xác thực thất bại khi đăng ký:', mailError.message);
+      console.error('Gửi email xác thực thất bại khi đăng ký:', mailError.message);
     }
 
     return res.status(201).json({
@@ -89,7 +89,7 @@ const register = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Lỗi tại authController.register:', error.message);
+    console.error('Lỗi tại authController.register:', error.message);
     return res.status(500).json({
       error: 'Lỗi hệ thống nội bộ khi đăng ký tài khoản.'
     });
@@ -152,7 +152,7 @@ const login = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Lỗi tại authController.login:', error.message);
+    console.error('Lỗi tại authController.login:', error.message);
     return res.status(500).json({
       error: 'Lỗi hệ thống nội bộ khi đăng nhập.'
     });
@@ -224,7 +224,7 @@ const verifyEmail = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Lỗi tại authController.verifyEmail:', error.message);
+    console.error('Lỗi tại authController.verifyEmail:', error.message);
     return res.status(500).json({
       error: 'Lỗi hệ thống nội bộ khi xác thực email.'
     });
@@ -250,7 +250,7 @@ const forgotPassword = async (req, res) => {
 
     const user = users[0];
     const resetOtp = Math.floor(100000 + Math.random() * 900000).toString();
-    console.log(`🔑 [DEBUG] Mã OTP khôi phục mật khẩu của email ${email} là: ${resetOtp}`);
+    console.log(`[DEBUG] Mã OTP khôi phục mật khẩu của email ${email} là: ${resetOtp}`);
 
     await db.execute(
       'UPDATE Users SET reset_token = ?, reset_token_expiry = DATE_ADD(NOW(), INTERVAL 15 MINUTE) WHERE user_id = ?',
@@ -277,7 +277,7 @@ const forgotPassword = async (req, res) => {
     try {
       await sendEmail(email, mailSubject, mailHtml);
     } catch (mailError) {
-      console.error('⚠️ Gửi email khôi phục mật khẩu thất bại:', mailError.message);
+      console.error('Gửi email khôi phục mật khẩu thất bại:', mailError.message);
     }
 
     return res.status(200).json({
@@ -286,7 +286,7 @@ const forgotPassword = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Lỗi tại authController.forgotPassword:', error.message);
+    console.error('Lỗi tại authController.forgotPassword:', error.message);
     return res.status(500).json({
       error: 'Lỗi hệ thống nội bộ khi xử lý quên mật khẩu.'
     });
@@ -341,7 +341,7 @@ const resetPassword = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Lỗi tại authController.resetPassword:', error.message);
+    console.error('Lỗi tại authController.resetPassword:', error.message);
     return res.status(500).json({
       error: 'Lỗi hệ thống nội bộ khi đặt lại mật khẩu.'
     });
@@ -375,7 +375,7 @@ const resendVerification = async (req, res) => {
       [emailVerificationToken, trimmedEmail]
     );
 
-    console.log(`🔑 [DEBUG] Mã OTP mới của email ${trimmedEmail} là: ${emailVerificationToken}`);
+    console.log(`[DEBUG] Mã OTP mới của email ${trimmedEmail} là: ${emailVerificationToken}`);
 
     const mailSubject = 'MediConnect - Gửi lại mã xác thực tài khoản';
     const mailHtml = `
@@ -396,7 +396,7 @@ const resendVerification = async (req, res) => {
     try {
       await sendEmail(trimmedEmail, mailSubject, mailHtml);
     } catch (mailError) {
-      console.error('⚠️ Gửi lại email xác thực thất bại:', mailError.message);
+      console.error('Gửi lại email xác thực thất bại:', mailError.message);
     }
 
     return res.status(200).json({
@@ -404,7 +404,7 @@ const resendVerification = async (req, res) => {
       message: 'Mã xác thực mới đã được gửi thành công.'
     });
   } catch (error) {
-    console.error('❌ Lỗi tại authController.resendVerification:', error.message);
+    console.error('Lỗi tại authController.resendVerification:', error.message);
     return res.status(500).json({ error: 'Lỗi hệ thống nội bộ khi gửi lại mã xác thực.' });
   }
 };

@@ -49,7 +49,7 @@ Hãy viết một đoạn tóm tắt bệnh sử súc tích đúng 3-4 câu (kho
         return aiText;
       }
     } catch (llmError) {
-      console.warn('⚠️ Gọi OpenAI API thất bại hoặc quá hạn, chuyển sang thuật toán NLP tổng hợp nội bộ:', llmError.message);
+      console.warn('Gọi OpenAI API thất bại hoặc quá hạn, chuyển sang thuật toán NLP tổng hợp nội bộ:', llmError.message);
     }
   }
 

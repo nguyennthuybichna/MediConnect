@@ -3,7 +3,7 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
 async function init() {
-  console.log('🔄 Đang kết nối và khởi tạo CSDL MySQL...');
+  console.log('Đang kết nối và khởi tạo CSDL MySQL...');
 
   const connection = await mysql.createConnection({
     host: process.env.DB_HOST || 'localhost',
@@ -16,7 +16,7 @@ async function init() {
     const dbName = process.env.DB_NAME || 'mediConnect';
 
     await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\`;`);
-    console.log(`✅ Đã tạo/xác minh CSDL: ${dbName}`);
+    console.log(`Đã tạo/xác minh CSDL: ${dbName}`);
 
     await connection.query(`USE \`${dbName}\`;`);
 
@@ -35,7 +35,7 @@ async function init() {
         \`reset_token_expiry\` DATETIME DEFAULT NULL
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
-    console.log('✅ Bảng Users đã được khởi tạo.');
+    console.log('Bảng Users đã được khởi tạo.');
 
     await connection.query(`
       CREATE TABLE IF NOT EXISTS \`Allergy\` (
@@ -47,7 +47,7 @@ async function init() {
         FOREIGN KEY (\`user_id\`) REFERENCES \`Users\` (\`user_id\`) ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
-    console.log('✅ Bảng Allergy đã được khởi tạo.');
+    console.log('Bảng Allergy đã được khởi tạo.');
 
     await connection.query(`
       CREATE TABLE IF NOT EXISTS \`MedicalRecord\` (
@@ -61,7 +61,7 @@ async function init() {
         FOREIGN KEY (\`patient_id\`) REFERENCES \`Users\` (\`user_id\`) ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
-    console.log('✅ Bảng MedicalRecord đã được khởi tạo.');
+    console.log('Bảng MedicalRecord đã được khởi tạo.');
 
     await connection.query(`
       CREATE TABLE IF NOT EXISTS \`AI_Predictions\` (
@@ -77,7 +77,7 @@ async function init() {
         FOREIGN KEY (\`patient_id\`) REFERENCES \`Users\` (\`user_id\`) ON DELETE CASCADE
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
-    console.log('✅ Bảng AI_Predictions đã được khởi tạo.');
+    console.log('Bảng AI_Predictions đã được khởi tạo.');
 
     await connection.query(`
       CREATE TABLE IF NOT EXISTS \`Appointment\` (
@@ -95,11 +95,11 @@ async function init() {
         FOREIGN KEY (\`prediction_id\`) REFERENCES \`AI_Predictions\` (\`prediction_id\`) ON DELETE SET NULL
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
-    console.log('✅ Bảng Appointment đã được khởi tạo.');
+    console.log('Bảng Appointment đã được khởi tạo.');
 
     const [users] = await connection.query('SELECT COUNT(*) AS cnt FROM `Users`;');
     if (users[0].cnt === 0) {
-      console.log('🌱 Đang gieo dữ liệu mẫu...');
+      console.log('Đang gieo dữ liệu mẫu...');
 
       const hash = '$2a$10$eHSnmvppvOYq9bxPDBefCO8Y2ssdLRjoAWRmojZ2i4CWn7kHqF97G';
 
@@ -130,14 +130,14 @@ async function init() {
         (1, 2, NULL, '2023-10-26 14:15:00', 'Scheduled');
       `);
 
-      console.log('🌱 Gieo dữ liệu mẫu thành công!');
+      console.log('Gieo dữ liệu mẫu thành công!');
     } else {
-      console.log('⚠️ Cơ sở dữ liệu đã có dữ liệu, bỏ qua seeding.');
+      console.log('Cơ sở dữ liệu đã có dữ liệu, bỏ qua seeding.');
     }
 
-    console.log(`🎉 Kết nối và khởi tạo CSDL "${dbName}" thành công!`);
+    console.log(`Kết nối và khởi tạo CSDL "${dbName}" thành công!`);
   } catch (error) {
-    console.error('❌ Lỗi khi khởi tạo cơ sở dữ liệu:', error.message);
+    console.error('Lỗi khi khởi tạo cơ sở dữ liệu:', error.message);
   } finally {
     await connection.end();
   }

@@ -137,7 +137,7 @@ const PatientDashboard = () => {
           ]);
         }
       } catch (err) {
-        console.warn('⚠️ Lỗi API /doctors, sử dụng dữ liệu giả lập:', err.message);
+        console.warn('Lỗi API /doctors, sử dụng dữ liệu giả lập:', err.message);
         setDoctors([
           { user_id: 2, full_name: 'Dr. Sarah Chen', specialty: 'Cardiologist', email: 'sarah.chen@example.com' },
           { user_id: 3, full_name: 'Dr. James Miller', specialty: 'General Physician', email: 'james.miller@example.com' },
@@ -196,7 +196,7 @@ const PatientDashboard = () => {
         setDiagError('Không thể thực hiện chẩn đoán AI lúc này.');
       }
     } catch (err) {
-      console.warn('⚠️ Lỗi chẩn đoán:', err.message);
+      console.warn('Lỗi chẩn đoán:', err.message);
       setDiagError(err.response?.data?.error || err.message || 'Lỗi chẩn đoán triệu chứng.');
     } finally {
       setIsLoading(false);

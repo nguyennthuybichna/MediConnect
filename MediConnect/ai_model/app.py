@@ -456,7 +456,7 @@ async def chat(request: ChatRequest):
         reply_text = data['candidates'][0]['content']['parts'][0]['text']
         return {"reply": reply_text}
     except Exception as e:
-        print(f"❌ Lỗi gọi Gemini API: {str(e)}")
+        print(f"Lỗi gọi Gemini API: {str(e)}")
 
         return run_mediconnect_simulation(request.message, request.history)
 
