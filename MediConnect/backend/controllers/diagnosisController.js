@@ -1,29 +1,18 @@
 const axios = require('axios');
 const db = require('../config/db');
 
-/**
- * Kiểm tra xem chuỗi văn bản triệu chứng có phải là chuỗi vô nghĩa/spam không:
- * - Chuỗi quá ngắn (< 2 ký tự sau khi trim).
- * - Chuỗi chỉ chứa số, ký tự đặc biệt hoặc khoảng trắng.
- * - Chuỗi chỉ là lặp lại 1 ký tự (vd: "aaaaa", "11111", ".....").
- * - Chuỗi từ 3 ký tự trở lên nhưng không chứa nguyên âm tiếng Việt/tiếng Anh (vd: "asdfghjk", "bcdfgh", "qwrtyp").
- */
 const isMeaninglessText = (text) => {
   if (!text || typeof text !== 'string') return true;
   const trimmed = text.trim();
   if (trimmed.length < 2) return true;
 
-  // Chỉ chứa số hoặc ký tự đặc biệt
   if (/^[\d\W_]+$/u.test(trimmed)) return true;
 
-  // Lặp lại 1 ký tự duy nhất
   if (/^(.)\1{2,}$/i.test(trimmed)) return true;
 
-  // Kiểm tra nguyên âm (tiếng Việt và tiếng Anh)
   const hasVowels = /[aeiouyàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹ]/i.test(trimmed);
   if (!hasVowels && trimmed.length >= 3) return true;
 
-  // Chuỗi ngẫu nhiên bàn phím phổ biến
   const gibberishPatterns = [
     /^[asdfghjkl]+$/i,
     /^[qwertyuiop]+$/i,
@@ -35,23 +24,14 @@ const isMeaninglessText = (text) => {
   return false;
 };
 
-/**
- * Hàm làm sạch chuỗi symptoms_text (tiền xử lý dữ liệu đầu vào)
- * - Loại bỏ ký tự đặc biệt, chỉ giữ lại chữ, số và chữ cái tiếng Việt có dấu.
- * - Loại bỏ khoảng trắng thừa ở giữa và hai đầu.
- */
 const preprocessSymptoms = (text) => {
   if (!text) return '';
   return text
-    .replace(/[^\w\s\u00C0-\u1EF9,.-]/gi, ' ') // Giữ lại chữ tiếng Việt, dấu phẩy, dấu chấm, dấu gạch ngang
-    .replace(/\s+/g, ' ')                     // Xoá khoảng trắng thừa
+    .replace(/[^\w\s\u00C0-\u1EF9,.-]/gi, ' ')
+    .replace(/\s+/g, ' ')
     .trim();
 };
 
-/**
- * POST /api/diagnosis
- * API tiếp nhận chẩn đoán từ AI trợ lý
- */
 const createDiagnosis = async (req, res) => {
   try {
     const { patient_id } = req.body;
@@ -64,7 +44,6 @@ const createDiagnosis = async (req, res) => {
       });
     }
 
-    // Kiểm tra ký tự vô nghĩa hoặc chỉ 1 chữ cái
     if (isMeaninglessText(symptoms_text)) {
       return res.status(400).json({
         success: false,
@@ -72,7 +51,6 @@ const createDiagnosis = async (req, res) => {
       });
     }
 
-    // 1. Tiền xử lý (Preprocessing) chuỗi triệu chứng
     const cleanedSymptoms = preprocessSymptoms(symptoms_text);
 
     if (!cleanedSymptoms || isMeaninglessText(cleanedSymptoms)) {
@@ -85,11 +63,10 @@ const createDiagnosis = async (req, res) => {
     let aiDisease = 'Chưa xác định';
     let aiConfidence = 0.00;
 
-    // 2. Gửi yêu cầu sang FastAPI Inference Engine
     try {
       const pythonResponse = await axios.post(
         'http://localhost:8000/predict',
-        { text: cleanedSymptoms }, // FastAPI mong đợi thuộc tính 'text'
+        { text: cleanedSymptoms },
         { timeout: 5000 }
       );
 
@@ -101,8 +78,7 @@ const createDiagnosis = async (req, res) => {
       }
     } catch (apiError) {
       console.error('🔒 FastAPI Connection Error:', apiError.message);
-      
-      // Bắt lỗi kết nối mạng (ECONNREFUSED hoặc ETIMEDOUT) khi FastAPI offline
+
       if (apiError.code === 'ECONNREFUSED' || apiError.code === 'ETIMEDOUT') {
         return res.status(503).json({
           success: false,
@@ -110,31 +86,27 @@ const createDiagnosis = async (req, res) => {
         });
       }
 
-      // Trả về lỗi 500 thân thiện cho các lỗi giao tiếp API khác
       return res.status(500).json({
         success: false,
         error: 'Lỗi hệ thống khi truyền thông tin chẩn đoán tới động cơ AI.'
       });
     }
 
-    // 3. Quản lý dữ liệu CSDL & Kiểm tra liên kết an toàn với MedicalRecord (1-1 với Users)
-    // Truy vấn xem bệnh nhân đã có bản ghi y tế chưa
     const [existingRecord] = await db.execute(
       'SELECT record_id FROM MedicalRecord WHERE patient_id = ?',
       [patient_id]
     );
 
     if (existingRecord.length === 0) {
-      // Nếu chưa tồn tại, tự động tạo mới một MedicalRecord trống để đảm bảo tính toàn vẹn khóa ngoại
+
       await db.execute(
-        `INSERT INTO MedicalRecord (patient_id, blood_type, height, weight, underlying_conditions, past_surgeries) 
+        `INSERT INTO MedicalRecord (patient_id, blood_type, height, weight, underlying_conditions, past_surgeries)
          VALUES (?, NULL, NULL, NULL, NULL, NULL)`,
         [patient_id]
       );
       console.log(`🌱 Đã tự động tạo hồ sơ bệnh án liên kết cho bệnh nhân ID: ${patient_id}`);
     }
 
-    // 4. Lưu kết quả chẩn đoán vào bảng AI_Predictions
     const chatHistory = req.body.chat_history ? JSON.stringify(req.body.chat_history) : null;
     const sql = `
       INSERT INTO AI_Predictions (patient_id, symptoms_text, ai_disease, ai_confidence, is_verified, chat_history)
@@ -156,7 +128,6 @@ const createDiagnosis = async (req, res) => {
       }
     });
 
-
   } catch (error) {
     console.error('❌ Lỗi tại diagnosisController.createDiagnosis:', error.message);
     return res.status(500).json({
@@ -169,25 +140,25 @@ const createDiagnosis = async (req, res) => {
 const getDiagnosisHistory = async (req, res) => {
   try {
     if (!req.user || !req.user.user_id) {
-      return res.status(401).json({ 
-        success: false, 
-        error: 'Không xác định được danh tính người dùng. Vui lòng đăng nhập lại.' 
+      return res.status(401).json({
+        success: false,
+        error: 'Không xác định được danh tính người dùng. Vui lòng đăng nhập lại.'
       });
     }
     const patient_id = req.user.user_id;
 
     const sql = `
-      SELECT 
-        prediction_id, 
-        patient_id, 
-        symptoms_text, 
-        ai_disease, 
-        ai_confidence, 
-        doctor_corrected_disease, 
-        is_verified, 
-        created_at 
-      FROM AI_Predictions 
-      WHERE patient_id = ? 
+      SELECT
+        prediction_id,
+        patient_id,
+        symptoms_text,
+        ai_disease,
+        ai_confidence,
+        doctor_corrected_disease,
+        is_verified,
+        created_at
+      FROM AI_Predictions
+      WHERE patient_id = ?
       ORDER BY created_at DESC
     `;
 
@@ -217,7 +188,6 @@ const chatWithMediConnect = async (req, res) => {
       });
     }
 
-    // Kiểm tra tin nhắn vô nghĩa, ký tự rác hoặc 1 chữ cái
     if (isMeaninglessText(message)) {
       return res.status(200).json({
         success: true,
@@ -270,15 +240,14 @@ const getDiagnosisHistoryByPatientId = async (req, res) => {
       return res.status(400).json({ error: 'Thiếu mã patient_id trong yêu cầu.' });
     }
 
-    // Kiểm tra quyền hạn: Bệnh nhân chỉ được xem lịch sử của chính mình
     if (req.user.role === 'patient' && Number(req.user.user_id) !== Number(patient_id)) {
       return res.status(403).json({ error: 'Bạn không có quyền truy cập lịch sử của bệnh nhân này.' });
     }
 
     const sql = `
       SELECT prediction_id, patient_id, symptoms_text, ai_disease, ai_confidence, doctor_corrected_disease, is_verified, created_at, chat_history
-      FROM AI_Predictions 
-      WHERE patient_id = ? 
+      FROM AI_Predictions
+      WHERE patient_id = ?
       ORDER BY created_at DESC
     `;
 
@@ -302,4 +271,3 @@ module.exports = {
   chatWithMediConnect,
   getDiagnosisHistoryByPatientId
 };
-

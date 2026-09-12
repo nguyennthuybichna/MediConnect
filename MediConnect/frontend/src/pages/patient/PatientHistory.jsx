@@ -24,16 +24,14 @@ const PatientHistory = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all'); // 'all' | 'verified' | 'pending'
+  const [filterStatus, setFilterStatus] = useState('all');
 
-  // Hàm tải dữ liệu lịch sử chẩn đoán từ Backend API
   const fetchDiagnosisHistory = async () => {
     setLoading(true);
     setError(null);
     try {
       const response = await api.get('/diagnosis/history');
 
-      // Hỗ trợ cả 2 định dạng trả về: { success: true, data: [...] } hoặc mảng trực tiếp [...]
       const data = response.data?.data || (Array.isArray(response.data) ? response.data : []);
       setHistory(data);
     } catch (err) {
@@ -52,7 +50,6 @@ const PatientHistory = () => {
     fetchDiagnosisHistory();
   }, []);
 
-  // Format ngày giờ hiển thị dạng DD/MM/YYYY - HH:mm
   const formatDateTime = (dateString) => {
     if (!dateString) return 'Chưa xác định';
     const date = new Date(dateString);
@@ -67,7 +64,6 @@ const PatientHistory = () => {
     return `${day}/${month}/${year} • ${hours}:${minutes}`;
   };
 
-  // Format chỉ ngày dạng DD/MM/YYYY
   const formatDateOnly = (dateString) => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
@@ -79,17 +75,15 @@ const PatientHistory = () => {
     return `${day}/${month}/${year}`;
   };
 
-  // Format phần trăm độ tin cậy của AI (VD: 0.95 -> 95% hoặc 95.0%)
   const formatConfidence = (confidence) => {
     if (confidence === null || confidence === undefined) return '0%';
     const num = parseFloat(confidence);
     if (isNaN(num)) return '0%';
-    // Nếu giá trị dạng thập phân 0 - 1
+
     const percentage = num <= 1 ? num * 100 : num;
     return `${Math.round(percentage)}%`;
   };
 
-  // Lọc dữ liệu theo từ khóa tìm kiếm và trạng thái duyệt
   const filteredHistory = history.filter((item) => {
     const matchesSearch =
       (item.symptoms_text && item.symptoms_text.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -105,7 +99,6 @@ const PatientHistory = () => {
     return matchesSearch;
   });
 
-  // Thống kê nhanh
   const totalCount = history.length;
   const verifiedCount = history.filter((item) => Number(item.is_verified) === 1).length;
   const pendingCount = totalCount - verifiedCount;
@@ -113,8 +106,7 @@ const PatientHistory = () => {
   return (
     <div className="min-h-screen bg-slate-50/60 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto space-y-6">
-        
-        {/* Header màn hình */}
+
         <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 shadow-sm">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
@@ -140,7 +132,6 @@ const PatientHistory = () => {
             </button>
           </div>
 
-          {/* Thẻ thống kê nhanh */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6 pt-6 border-t border-gray-100">
             <div className="bg-slate-50/80 rounded-xl p-4 border border-gray-200/80">
               <div className="flex items-center justify-between">
@@ -168,7 +159,6 @@ const PatientHistory = () => {
           </div>
         </div>
 
-        {/* Thanh tìm kiếm và Bộ lọc */}
         <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="relative w-full sm:w-80">
             <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -215,7 +205,6 @@ const PatientHistory = () => {
           </div>
         </div>
 
-        {/* Trạng thái Loading Skeleton */}
         {loading && (
           <div className="space-y-4">
             {[1, 2, 3].map((index) => (
@@ -243,7 +232,6 @@ const PatientHistory = () => {
           </div>
         )}
 
-        {/* Trạng thái Lỗi */}
         {!loading && error && (
           <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center shadow-sm">
             <div className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -260,7 +248,6 @@ const PatientHistory = () => {
           </div>
         )}
 
-        {/* Trạng thái Danh sách trống */}
         {!loading && !error && filteredHistory.length === 0 && (
           <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center shadow-sm">
             <div className="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -275,7 +262,6 @@ const PatientHistory = () => {
           </div>
         )}
 
-        {/* Danh sách Thẻ Lịch sử Chẩn đoán (Timeline / Cards) */}
         {!loading && !error && filteredHistory.length > 0 && (
           <div className="space-y-4">
             {filteredHistory.map((item, index) => {
@@ -290,14 +276,13 @@ const PatientHistory = () => {
                   key={item.prediction_id || index}
                   className="bg-white rounded-2xl border border-gray-200 p-5 sm:p-6 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden"
                 >
-                  {/* Dải màu nhận diện trạng thái bên mép trái thẻ */}
+
                   <div
                     className={`absolute left-0 top-0 bottom-0 w-1.5 ${
                       isVerified ? 'bg-emerald-500' : 'bg-amber-400'
                     }`}
                   />
 
-                  {/* KHỐI 1: Header - Ngày khai báo & Mã bản ghi */}
                   <div className="flex flex-wrap items-center justify-between gap-2 pb-4 mb-4 border-b border-gray-100">
                     <div className="flex items-center gap-2 text-sm text-gray-700 font-medium">
                       <div className="p-1.5 bg-slate-100 rounded-lg text-slate-600">
@@ -314,10 +299,8 @@ const PatientHistory = () => {
                     </div>
                   </div>
 
-                  {/* KHỐI 2 & KHỐI 3: Triệu chứng khai báo & AI Chẩn đoán sơ bộ */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-                    
-                    {/* KHỐI 2: Triệu chứng Bệnh nhân khai báo */}
+
                     <div className="bg-slate-50/70 rounded-xl p-4 border border-gray-200 flex flex-col justify-between">
                       <div>
                         <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
@@ -330,7 +313,6 @@ const PatientHistory = () => {
                       </div>
                     </div>
 
-                    {/* KHỐI 3: AI Chẩn đoán Sơ bộ */}
                     <div className="bg-blue-50/40 rounded-xl p-4 border border-blue-100 flex flex-col justify-between">
                       <div>
                         <div className="flex items-center justify-between mb-2">
@@ -348,7 +330,6 @@ const PatientHistory = () => {
                         </p>
                       </div>
 
-                      {/* Thanh biểu thị độ tin cậy AI */}
                       <div className="mt-3 pt-2 border-t border-blue-100/60">
                         <div className="w-full bg-blue-100 rounded-full h-1.5 overflow-hidden">
                           <div
@@ -367,7 +348,6 @@ const PatientHistory = () => {
                     </div>
                   </div>
 
-                  {/* KHỐI 4: Bác sĩ Kết luận */}
                   <div
                     className={`rounded-xl p-4 border transition-all ${
                       isVerified
@@ -395,7 +375,6 @@ const PatientHistory = () => {
                         </span>
                       </div>
 
-                      {/* Trạng thái Badge */}
                       {isVerified ? (
                         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 w-fit">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
@@ -409,7 +388,6 @@ const PatientHistory = () => {
                       )}
                     </div>
 
-                    {/* Nội dung kết luận */}
                     <div className="mt-3 pl-1">
                       {isVerified ? (
                         <div className="space-y-1">

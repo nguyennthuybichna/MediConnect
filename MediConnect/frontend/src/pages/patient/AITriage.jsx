@@ -21,17 +21,13 @@ const isMeaninglessText = (text) => {
   const trimmed = text.trim();
   if (trimmed.length < 2) return true;
 
-  // Chỉ chứa số hoặc ký tự đặc biệt
   if (/^[\d\W_]+$/u.test(trimmed)) return true;
 
-  // Lặp lại 1 ký tự duy nhất (vd: aaaaa, 11111)
   if (/^(.)\1{2,}$/i.test(trimmed)) return true;
 
-  // Kiểm tra nguyên âm (tiếng Việt và tiếng Anh)
   const hasVowels = /[aeiouyàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹ]/i.test(trimmed);
   if (!hasVowels && trimmed.length >= 3) return true;
 
-  // Chuỗi ngẫu nhiên bàn phím phổ biến
   const gibberishPatterns = [
     /^[asdfghjkl]+$/i,
     /^[qwertyuiop]+$/i,
@@ -43,7 +39,6 @@ const isMeaninglessText = (text) => {
   return false;
 };
 
-// Cache bộ nhớ đệm bên ngoài component để giữ lại hội thoại khi chuyển trang (chỉ bị xóa khi F5/tải lại trang)
 let chatHistoryCache = {
   userId: null,
   messages: null
@@ -57,7 +52,6 @@ const AITriage = () => {
 
   const currentUserId = user?.id || localStorage.getItem('user_id') || 1;
 
-  // Quản lý danh sách tin nhắn của chatbot (khởi tạo từ cache nếu có)
   const [messages, setMessages] = useState(() => {
     if (chatHistoryCache && chatHistoryCache.userId === currentUserId && chatHistoryCache.messages) {
       return chatHistoryCache.messages;
@@ -74,7 +68,6 @@ const AITriage = () => {
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
 
-  // Đồng bộ thay đổi tin nhắn vào cache mỗi khi thay đổi
   useEffect(() => {
     chatHistoryCache = {
       userId: currentUserId,
@@ -82,7 +75,6 @@ const AITriage = () => {
     };
   }, [messages, currentUserId]);
 
-  // Cuộn tự động xuống tin nhắn mới nhất
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -91,7 +83,6 @@ const AITriage = () => {
     scrollToBottom();
   }, [messages, isTyping]);
 
-  // Hàm định dạng chữ in đậm dạng **text**
   const renderMessageText = (text, sender) => {
     if (!text) return '';
     const parts = text.split(/(\*\*.*?\*\*)/g);
@@ -110,7 +101,6 @@ const AITriage = () => {
     });
   };
 
-  // Xử lý gửi tin nhắn
   const handleSendMessage = async (textToSend) => {
     if (!textToSend || !textToSend.trim() || isTyping) return;
 
@@ -122,13 +112,11 @@ const AITriage = () => {
       text: trimmedInput
     };
 
-    // Cập nhật mảng tin nhắn mới nhất
     const updatedMessages = [...messages, userMsg];
     setMessages(updatedMessages);
     setInputValue('');
     setIsTyping(true);
 
-    // Nếu người dùng nhập ký tự rác, 1 chữ cái hoặc chuỗi không có nghĩa
     if (isMeaninglessText(trimmedInput)) {
       setTimeout(() => {
         setMessages((prev) => [
@@ -145,13 +133,12 @@ const AITriage = () => {
     }
 
     try {
-      // Định dạng lịch sử trò chuyện gửi lên backend (chuyển sender sang role)
+
       const history = messages.map(msg => ({
         role: msg.sender,
         text: msg.text
       }));
 
-      // Gọi API trò chuyện với MediConnect AI
       const res = await api.post('/diagnosis/chat', {
         message: trimmedInput,
         history: history
@@ -159,10 +146,8 @@ const AITriage = () => {
 
       const reply = res.data.reply;
 
-      // Nhận diện kết quả chẩn đoán cuối cùng để kích hoạt nút đặt lịch
       const isResult = /dự đoán bệnh|độ tin cậy/i.test(reply);
 
-      // Trích xuất tên bệnh để hiển thị hoặc lưu nếu cần
       let disease = '';
       const diseaseMatch = reply.match(/Dự đoán bệnh:\s*\*\*(.*?)\*\*/i) || reply.match(/Dự đoán bệnh:\s*(.*?)(?:\n|$)/i);
       if (diseaseMatch) {
@@ -180,7 +165,6 @@ const AITriage = () => {
         }
       ]);
 
-      // Khi chẩn đoán hoàn tất, lưu lại lịch sử hội thoại và chẩn đoán vào DB
       if (isResult) {
         try {
           const patientId = user?.id || localStorage.getItem('user_id') || 1;
@@ -224,7 +208,6 @@ const AITriage = () => {
     }
   };
 
-
   const handleQuickInquiry = (inquiry) => {
     handleSendMessage(inquiry);
   };
@@ -251,7 +234,7 @@ const AITriage = () => {
       <Sidebar isMobileOpen={isMobileOpen} setIsMobileOpen={setIsMobileOpen} />
 
       <main className="flex-1 p-6 md:p-8 flex flex-col h-screen overflow-hidden max-w-7xl mx-auto space-y-6">
-        {/* Header hệ thống */}
+
         <header className="flex justify-between items-center gap-4 border-b border-[#f5eae6] pb-4 shrink-0">
           <div className="flex items-center gap-3">
             <button
@@ -289,10 +272,8 @@ const AITriage = () => {
           </div>
         </header>
 
-        {/* Khung Chatbot */}
         <div className="flex-1 bg-white rounded-3xl border border-[#f5eae6] shadow-sm flex flex-col overflow-hidden relative">
-          
-          {/* Header của Khung Chat */}
+
           <div className="p-4 md:px-6 border-b border-slate-50 flex items-center justify-between shrink-0 bg-white/50 backdrop-blur">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-brand-500/10 border border-brand-100 flex items-center justify-center">
@@ -321,14 +302,13 @@ const AITriage = () => {
             </div>
           </div>
 
-          {/* Vùng Tin nhắn (Scrollable) */}
           <div className="flex-1 p-4 md:p-6 overflow-y-auto space-y-6 bg-slate-50/30">
             {messages.map((msg) => (
               <div
                 key={msg.id}
                 className={`flex gap-3 max-w-[85%] ${msg.sender === 'patient' ? 'ml-auto flex-row-reverse' : 'mr-auto'}`}
               >
-                {/* Avatar */}
+
                 <div className={`w-8 h-8 rounded-full shrink-0 flex items-center justify-center font-bold text-xs border ${
                   msg.sender === 'patient'
                     ? 'bg-brand-100 border-brand-200 text-brand-800'
@@ -337,7 +317,6 @@ const AITriage = () => {
                   {msg.sender === 'patient' ? 'P' : 'AI'}
                 </div>
 
-                {/* Bong bóng tin nhắn */}
                 <div className="space-y-2 max-w-full">
                   <div className={`p-4 rounded-3xl text-sm leading-relaxed shadow-sm break-words break-all whitespace-pre-wrap overflow-hidden ${
                     msg.sender === 'patient'
@@ -346,7 +325,6 @@ const AITriage = () => {
                   }`}>
                     <p>{renderMessageText(msg.text, msg.sender)}</p>
 
-                    {/* Nút Đặt lịch khám đi kèm kết quả */}
                     {msg.isResult && (
                       <div className="mt-3.5 pt-2 border-t border-slate-200/50">
                         <button
@@ -362,7 +340,6 @@ const AITriage = () => {
               </div>
             ))}
 
-            {/* Hiệu ứng AI đang phân tích */}
             {isTyping && (
               <div className="flex gap-3 items-end mr-auto">
                 <div className="w-8 h-8 rounded-full bg-brand-500 border border-brand-600 text-white flex items-center justify-center text-xs font-bold">
@@ -382,7 +359,6 @@ const AITriage = () => {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Hộp nhập liệu ở đáy */}
           <div className="p-4 border-t border-slate-100 shrink-0 bg-white">
             <form
               onSubmit={(e) => {
@@ -431,7 +407,6 @@ const AITriage = () => {
           </div>
         </div>
 
-        {/* FAQs & Footer */}
         <section className="grid grid-cols-1 md:grid-cols-12 gap-4 shrink-0">
           <div className="md:col-span-8 space-y-2">
             <span className="block text-[10px] uppercase font-bold tracking-wider text-slate-400">Câu hỏi thường gặp</span>

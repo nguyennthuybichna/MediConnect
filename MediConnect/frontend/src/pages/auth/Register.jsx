@@ -2,13 +2,12 @@ import React, { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, User, ShieldCheck, Activity, ArrowRight, ArrowLeft, RefreshCw } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
-import api from '../../services/api'; // Sử dụng instance axios đã cấu hình sẵn
+import api from '../../services/api';
 
 const Register = () => {
   const navigate = useNavigate();
   const { register } = useAuth();
-  
-  // Trạng thái Form Đăng ký
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [fullName, setFullName] = useState('');
@@ -21,7 +20,6 @@ const Register = () => {
   const [role, setRole] = useState('patient');
   const [specialty, setSpecialty] = useState('General Physician');
 
-  // Trạng thái Xác thực OTP
   const [isVerifying, setIsVerifying] = useState(false);
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [otpError, setOtpError] = useState(null);
@@ -29,7 +27,6 @@ const Register = () => {
   const [isOtpLoading, setIsOtpLoading] = useState(false);
   const otpInputRefs = useRef([]);
 
-  // Xử lý nộp form đăng ký chính
   const handleSubmitRegister = async (e) => {
     e.preventDefault();
     setError(null);
@@ -82,9 +79,9 @@ const Register = () => {
 
     setIsLoading(true);
     try {
-      // Đăng ký qua authContext (không tự động login do token ở register đã loại bỏ ở BE)
+
       await register(trimmedFullName, trimmedEmail, trimmedPassword, role, role === 'doctor' ? specialty : null);
-      // Đăng ký thành công -> chuyển sang màn hình xác thực OTP
+
       setIsVerifying(true);
       setOtpSuccess('Tài khoản đã được tạo! Vui lòng nhập mã xác thực 6 số gửi tới email.');
     } catch (err) {
@@ -94,21 +91,18 @@ const Register = () => {
     }
   };
 
-  // Xử lý thay đổi ô nhập OTP
   const handleOtpChange = (value, index) => {
-    if (value && !/^\d$/.test(value)) return; // Chỉ cho phép nhập chữ số
-    
+    if (value && !/^\d$/.test(value)) return;
+
     const newOtp = [...otp];
     newOtp[index] = value;
     setOtp(newOtp);
 
-    // Tự động chuyển trỏ chuột sang ô kế tiếp khi nhập xong
     if (value && index < 5) {
       otpInputRefs.current[index + 1].focus();
     }
   };
 
-  // Xử lý nút Backspace trong ô nhập OTP
   const handleOtpKeyDown = (e, index) => {
     if (e.key === 'Backspace') {
       if (!otp[index] && index > 0) {
@@ -124,7 +118,6 @@ const Register = () => {
     }
   };
 
-  // Xử lý dán mã OTP (Paste)
   const handleOtpPaste = (e) => {
     const pasteData = e.clipboardData.getData('text').trim();
     if (/^\d{6}$/.test(pasteData)) {
@@ -134,7 +127,6 @@ const Register = () => {
     }
   };
 
-  // Xử lý gửi mã xác thực lên máy chủ
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
     const token = otp.join('');
@@ -161,7 +153,6 @@ const Register = () => {
     }
   };
 
-  // Gửi lại mã xác thực
   const handleResendOtp = async () => {
     setIsOtpLoading(true);
     setOtpError(null);
@@ -182,7 +173,6 @@ const Register = () => {
     <div className="min-h-screen bg-[#faf6f4] text-slate-800 font-sans flex flex-col justify-between py-8 px-4 sm:px-6 lg:px-8">
       <div className="flex-1 flex flex-col items-center justify-center">
 
-        {/* Logo Header */}
         <div className="flex flex-col items-center gap-2 mb-6">
           <div className="w-12 h-12 rounded-2xl bg-brand-500 flex items-center justify-center shadow-lg text-white">
             <Activity className="w-7 h-7" />
@@ -190,11 +180,8 @@ const Register = () => {
           <span className="text-3xl font-extrabold text-brand-800 tracking-tight">MediConnect</span>
         </div>
 
-        {/* Cấu trúc Màn hình thay đổi dựa trên state isVerifying */}
         {!isVerifying ? (
-          /* ==========================================
-             MÀN HÌNH ĐĂNG KÝ THÔNG TIN TÀI KHOẢN
-             ========================================== */
+
           <div className="bg-white rounded-3xl shadow-xl border border-brand-100 p-8 sm:p-10 max-w-md w-full relative">
             <div className="absolute top-0 left-1/2 -translate-x-1/2 h-1 w-24 bg-gradient-to-r from-brand-400 to-brand-600 rounded-b-full"></div>
 
@@ -207,7 +194,7 @@ const Register = () => {
             )}
 
             <form onSubmit={handleSubmitRegister} className="space-y-5">
-              {/* Họ tên */}
+
               <div>
                 <label className="block text-xs font-semibold text-slate-500 mb-1.5">
                   Họ và Tên
@@ -225,7 +212,6 @@ const Register = () => {
                 </div>
               </div>
 
-              {/* Lựa chọn vai trò */}
               <div>
                 <label className="block text-xs font-semibold text-slate-500 mb-1.5">
                   Bạn đăng ký với tư cách là
@@ -256,7 +242,6 @@ const Register = () => {
                 </div>
               </div>
 
-              {/* Chuyên khoa (Nếu là bác sĩ) */}
               {role === 'doctor' && (
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 mb-1.5">
@@ -278,7 +263,6 @@ const Register = () => {
                 </div>
               )}
 
-              {/* Email */}
               <div>
                 <label className="block text-xs font-semibold text-slate-500 mb-1.5">
                   Địa chỉ Email
@@ -296,7 +280,6 @@ const Register = () => {
                 </div>
               </div>
 
-              {/* Mật khẩu */}
               <div>
                 <label className="block text-xs font-semibold text-slate-500 mb-1.5">
                   Mật khẩu
@@ -321,7 +304,6 @@ const Register = () => {
                 </div>
               </div>
 
-              {/* Xác nhận mật khẩu */}
               <div>
                 <label className="block text-xs font-semibold text-slate-500 mb-1.5">
                   Xác nhận Mật khẩu
@@ -346,7 +328,6 @@ const Register = () => {
                 </div>
               </div>
 
-              {/* Đồng ý điều khoản */}
               <div className="flex items-start text-xs sm:text-sm">
                 <label className="flex items-start gap-2 cursor-pointer text-slate-600 font-medium">
                   <input
@@ -361,7 +342,6 @@ const Register = () => {
                 </label>
               </div>
 
-              {/* Button nộp đăng ký */}
               <button
                 type="submit"
                 disabled={isLoading}
@@ -381,9 +361,7 @@ const Register = () => {
             </div>
           </div>
         ) : (
-          /* ==========================================
-             MÀN HÌNH XÁC THỰC TÀI KHOẢN (Verify OTP)
-             ========================================== */
+
           <div className="bg-white rounded-3xl shadow-xl border border-brand-100 p-8 sm:p-10 max-w-md w-full relative animate-fadeIn">
             <div className="absolute top-0 left-1/2 -translate-x-1/2 h-1 w-24 bg-gradient-to-r from-brand-400 to-brand-600 rounded-b-full"></div>
 
@@ -405,8 +383,7 @@ const Register = () => {
             )}
 
             <form onSubmit={handleVerifyOtp} className="space-y-6">
-              
-              {/* Layout 6 ô nhập mã số */}
+
               <div className="flex justify-between gap-2.5" onPaste={handleOtpPaste}>
                 {otp.map((digit, idx) => (
                   <input
@@ -423,7 +400,6 @@ const Register = () => {
                 ))}
               </div>
 
-              {/* Nút kiểm tra kích hoạt */}
               <button
                 type="submit"
                 disabled={isOtpLoading}
@@ -443,7 +419,6 @@ const Register = () => {
               </button>
             </form>
 
-            {/* Các tùy chọn bên dưới màn hình xác thực */}
             <div className="mt-8 space-y-4 text-center">
               <div className="text-xs text-slate-500 font-semibold">
                 Chưa nhận được mã?{' '}
@@ -477,7 +452,6 @@ const Register = () => {
         )}
       </div>
 
-      {/* Compliance Footer */}
       <footer className="w-full max-w-md mx-auto flex items-center justify-center gap-6 py-4 text-xs font-semibold text-emerald-600 uppercase tracking-wider shrink-0">
         <div className="flex items-center gap-1.5">
           <ShieldCheck className="w-4 h-4" />

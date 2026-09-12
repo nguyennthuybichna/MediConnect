@@ -11,4 +11,3 @@ export const getBookedSlotsAPI = async (doctorId, date) => {
   });
   return response.data;
 };
-

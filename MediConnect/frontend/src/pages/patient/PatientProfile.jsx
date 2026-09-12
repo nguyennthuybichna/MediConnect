@@ -46,7 +46,7 @@ const PatientProfile = () => {
     if (user) {
       const patientId = user.id || localStorage.getItem('user_id') || 1;
       const isDemoUser = String(patientId) === '1' || user.email === 'elena.rossi@example.com';
-      
+
       setNameOverride(localStorage.getItem(`name_${patientId}`) || '');
       setDob(localStorage.getItem(`dob_${patientId}`) || (isDemoUser ? '14 Tháng 3, 1985' : ''));
       setPhone(localStorage.getItem(`phone_${patientId}`) || (isDemoUser ? '+1 (555) 902-1432' : ''));
@@ -142,15 +142,15 @@ const PatientProfile = () => {
   const handleEditProfileSubmit = (e) => {
     e.preventDefault();
     const patientId = user?.id || localStorage.getItem('user_id') || 1;
-    
+
     localStorage.setItem(`dob_${patientId}`, editDob);
     localStorage.setItem(`phone_${patientId}`, editPhone);
     localStorage.setItem(`name_${patientId}`, editFullName);
-    
+
     setDob(editDob);
     setPhone(editPhone);
     setNameOverride(editFullName);
-    
+
     setIsEditProfileOpen(false);
     showToast('✅ Cập nhật thông tin cá nhân thành công!');
   };

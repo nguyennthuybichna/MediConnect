@@ -1,19 +1,14 @@
 const db = require('../config/db');
 
-/**
- * GET /api/admin/users
- * Truy vấn danh sách toàn bộ người dùng trong hệ thống.
- * Bảo mật: Bắt buộc không trả về cột password_hash.
- */
 const getUsers = async (req, res) => {
   try {
     const sql = `
-      SELECT user_id, email, full_name, role, specialty, status 
-      FROM Users 
+      SELECT user_id, email, full_name, role, specialty, status
+      FROM Users
       ORDER BY user_id DESC
     `;
     const [users] = await db.execute(sql);
-    
+
     return res.status(200).json({
       success: true,
       count: users.length,
@@ -28,10 +23,6 @@ const getUsers = async (req, res) => {
   }
 };
 
-/**
- * PUT /api/admin/users/:id/approve
- * Cập nhật trạng thái tài khoản Bác sĩ từ "pending" (chờ duyệt) sang "active" (hoạt động).
- */
 const approveDoctor = async (req, res) => {
   const { id } = req.params;
 
@@ -43,7 +34,7 @@ const approveDoctor = async (req, res) => {
   }
 
   try {
-    // 1. Kiểm tra xem người dùng có tồn tại và có đúng vai trò Bác sĩ hay không
+
     const checkSql = 'SELECT user_id, role, status FROM Users WHERE user_id = ?';
     const [rows] = await db.execute(checkSql, [id]);
 
@@ -69,7 +60,6 @@ const approveDoctor = async (req, res) => {
       });
     }
 
-    // 2. Tiến hành cập nhật trạng thái hoạt động
     const updateSql = 'UPDATE Users SET status = \'active\' WHERE user_id = ?';
     await db.execute(updateSql, [id]);
 

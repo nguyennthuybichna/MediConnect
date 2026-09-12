@@ -1,20 +1,11 @@
 const axios = require('axios');
 
-/**
- * Thuật toán NLP / LLM Rút trích và Tóm tắt Bệnh sử Bệnh nhân (AI Patient Summary)
- * 
- * @param {Array} historyData - Danh sách bản ghi từ bảng AI_Predictions với is_verified = 1
- *        [{ created_at, symptoms_text, doctor_corrected_disease }, ...]
- * @param {string} patientName - Tên bệnh nhân
- * @returns {Promise<string>} Đoạn văn tóm tắt bệnh sử 3-4 dòng súc tích cho bác sĩ
- */
 const generateAISummary = async (historyData, patientName = 'Bệnh nhân') => {
-  // 1. Trường hợp bệnh nhân chưa có lịch sử khám xác thực
+
   if (!historyData || historyData.length === 0) {
     return `Bệnh nhân **${patientName}** chưa ghi nhận tiền sử bệnh lý xác thực trong hệ thống MediConnect. Đây là hồ sơ khám mới hoặc các kết quả trước đây chưa có chẩn đoán lâm sàng được phê duyệt. Bác sĩ vui lòng thực hiện thăm khám tổng quát và khai thác kỹ triệu chứng ban đầu.`;
   }
 
-  // 2. Nếu có cấu hình OPENAI_API_KEY, gọi mô hình OpenAI LLM
   if (process.env.OPENAI_API_KEY) {
     try {
       const historyContext = historyData.map((item, idx) => {
@@ -62,15 +53,11 @@ Hãy viết một đoạn tóm tắt bệnh sử súc tích đúng 3-4 câu (kho
     }
   }
 
-  // 3. Thuật toán NLP tổng hợp bệnh sử dựa trên quy tắc chuyên gia y tế (Rule-based NLP Engine)
   return buildAlgorithmicSummary(historyData, patientName);
 };
 
-/**
- * Thuật toán phân tích rút trích từ khóa và xâu chuỗi bệnh sử (NLP Rule-based Engine)
- */
 const buildAlgorithmicSummary = (historyData, patientName) => {
-  // A. Thống kê tần suất xuất hiện của các bệnh lý đã xác thực
+
   const diseaseCounts = {};
   const diseaseList = [];
 
@@ -84,7 +71,6 @@ const buildAlgorithmicSummary = (historyData, patientName) => {
     }
   });
 
-  // B. Rút trích các triệu chứng chủ đạo từ symptoms_text
   const symptomKeywordsMap = [
     { key: 'ho', label: 'ho kéo dài/ho khan' },
     { key: 'sốt', label: 'sốt định kỳ' },
@@ -114,10 +100,8 @@ const buildAlgorithmicSummary = (historyData, patientName) => {
     ? new Date(historyData[0].created_at).toLocaleDateString('vi-VN')
     : 'gần đây';
 
-  // C. Xây dựng đoạn tóm tắt 3-4 câu chặt chẽ
   const lines = [];
 
-  // Câu 1: Tiền sử chẩn đoán xác thực
   if (diseaseList.length > 0) {
     const boldDiseases = diseaseList.slice(0, 3).map(d => `**${d}**`).join(', ');
     lines.push(
@@ -129,7 +113,6 @@ const buildAlgorithmicSummary = (historyData, patientName) => {
     );
   }
 
-  // Câu 2: Triệu chứng tái diễn
   if (symptomList.length > 0) {
     const symptomSummary = symptomList.slice(0, 3).join(', ');
     lines.push(
@@ -141,8 +124,7 @@ const buildAlgorithmicSummary = (historyData, patientName) => {
     );
   }
 
-  // Câu 3: Đánh giá diễn tiến & tính chất bệnh lý
-  const hasChronic = diseaseList.some(d => 
+  const hasChronic = diseaseList.some(d =>
     /đái tháo đường|tiểu đường|huyết áp|hen|copd|tim mạch|mãn tính|viêm phế quản/i.test(d)
   );
 
@@ -156,7 +138,6 @@ const buildAlgorithmicSummary = (historyData, patientName) => {
     );
   }
 
-  // Câu 4: Khuyến nghị AI hỗ trợ quyết định lâm sàng
   lines.push(
     `Khuyến nghị Bác sĩ kiểm tra tiền sử dị ứng thuốc và liều lượng điều trị trước đó trước khi chỉ định đơn thuốc mới.`
   );

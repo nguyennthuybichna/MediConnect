@@ -4,15 +4,6 @@ const jwt = require('jsonwebtoken');
 const { sendEmail } = require('../utils/emailService');
 require('dotenv').config();
 
-/**
- * 1. Hàm đăng ký tài khoản (Register) - Sử dụng OTP 6 chữ số
- * Luồng dữ liệu:
- * - Tiếp nhận thông tin từ body.
- * - Mã hóa mật khẩu bằng bcrypt.
- * - Tạo mã OTP 6 chữ số ngẫu nhiên: Math.floor(100000 + Math.random() * 900000).toString()
- * - Lưu người dùng mới vào bảng `Users` kèm `verification_token` là OTP 6 số.
- * - Gửi email chứa mã OTP 6 số hiển thị nổi bật cho người dùng nhập trên giao diện.
- */
 const register = async (req, res) => {
   try {
     const { email, password, full_name, role, specialty } = req.body;
@@ -59,10 +50,8 @@ const register = async (req, res) => {
     const userRole = role || 'patient';
     const userSpecialty = specialty || null;
 
-    // Tạo mã OTP xác thực email 6 chữ số ngẫu nhiên
     const emailVerificationToken = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // Lưu vào bảng tạm Pending_Registrations (CHƯA LƯU VÀO Users cho tới khi xác thực email thành công)
     await db.execute('DELETE FROM Pending_Registrations WHERE email = ?', [trimmedEmail]);
     await db.execute(`
       INSERT INTO Pending_Registrations (email, password_hash, full_name, role, specialty, otp, expires_at)
@@ -71,7 +60,6 @@ const register = async (req, res) => {
 
     console.log(`🔑 [DEBUG] Mã OTP đăng ký của email ${trimmedEmail} là: ${emailVerificationToken}`);
 
-    // Gửi email xác thực chứa mã OTP
     const mailSubject = 'MediConnect - Mã xác thực tài khoản';
     const mailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #f5eae6; border-radius: 15px;">
@@ -108,9 +96,6 @@ const register = async (req, res) => {
   }
 };
 
-/**
- * 2. Hàm đăng nhập (Login)
- */
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -140,7 +125,6 @@ const login = async (req, res) => {
       });
     }
 
-    // Kiểm tra nếu is_email_verified === 0 (false), chặn đăng nhập
     if (user.is_email_verified === 0) {
       return res.status(403).json({
         error: 'Vui lòng xác thực email.'
@@ -175,13 +159,6 @@ const login = async (req, res) => {
   }
 };
 
-/**
- * 3. Hàm xác thực email (Verify Email) - Hỗ trợ cả GET (query param) và POST (body)
- * Luồng dữ liệu:
- * - Nhận `token` (OTP) và `email` từ body hoặc query.
- * - Tìm user khớp `verification_token` và `email`.
- * - Cập nhật `is_email_verified = 1` và xóa token xác thực.
- */
 const verifyEmail = async (req, res) => {
   try {
     const token = req.query.token || req.body.token;
@@ -196,7 +173,6 @@ const verifyEmail = async (req, res) => {
     const trimmedToken = String(token).trim();
     const trimmedEmail = email ? String(email).trim() : null;
 
-    // Tìm thông tin đăng ký chờ xác thực trong bảng Pending_Registrations
     let sql, params;
     if (trimmedEmail) {
       sql = 'SELECT * FROM Pending_Registrations WHERE otp = ? AND email = ? AND expires_at > NOW()';
@@ -225,7 +201,6 @@ const verifyEmail = async (req, res) => {
 
     const pending = pendingUsers[0];
 
-    // CHÍNH THỨC TẠO TÀI KHOẢN VÀO BẢNG Users SAU KHI XÁC THỰC EMAIL THÀNH CÔNG
     const [existing] = await db.execute('SELECT user_id FROM Users WHERE email = ?', [pending.email]);
     let userId;
 
@@ -240,7 +215,6 @@ const verifyEmail = async (req, res) => {
       userId = insertResult.insertId;
     }
 
-    // Xóa dữ liệu đăng ký tạm sau khi đã tạo xong tài khoản
     await db.execute('DELETE FROM Pending_Registrations WHERE email = ?', [pending.email]);
 
     return res.status(200).json({
@@ -257,14 +231,6 @@ const verifyEmail = async (req, res) => {
   }
 };
 
-/**
- * 4. Yêu cầu khôi phục mật khẩu (Forgot Password) - Sử dụng OTP 6 chữ số
- * Luồng dữ liệu:
- * - Nhận email khôi phục mật khẩu.
- * - Sinh mã OTP 6 chữ số ngẫu nhiên.
- * - Lưu OTP và hạn sử dụng 15 phút vào DB.
- * - Gửi email chứa mã OTP khôi phục mật khẩu.
- */
 const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
@@ -285,8 +251,7 @@ const forgotPassword = async (req, res) => {
     const user = users[0];
     const resetOtp = Math.floor(100000 + Math.random() * 900000).toString();
     console.log(`🔑 [DEBUG] Mã OTP khôi phục mật khẩu của email ${email} là: ${resetOtp}`);
-    
-    // Đặt hạn sử dụng là 15 phút bằng hàm DATE_ADD của MySQL để đồng bộ múi giờ hệ thống
+
     await db.execute(
       'UPDATE Users SET reset_token = ?, reset_token_expiry = DATE_ADD(NOW(), INTERVAL 15 MINUTE) WHERE user_id = ?',
       [resetOtp, user.user_id]
@@ -328,13 +293,6 @@ const forgotPassword = async (req, res) => {
   }
 };
 
-/**
- * 5. Thiết lập mật khẩu mới (Reset Password) - Xác thực bằng OTP 6 chữ số
- * Luồng dữ liệu:
- * - Nhận `email`, `token` (mã OTP 6 số) và `new_password` từ body.
- * - So khớp CSDL tìm tài khoản trùng khớp email và OTP chưa hết hạn.
- * - Mã hóa mật khẩu mới và lưu vào DB, xóa thông tin reset.
- */
 const resetPassword = async (req, res) => {
   try {
     const { email, token, new_password } = req.body;
@@ -351,7 +309,6 @@ const resetPassword = async (req, res) => {
       });
     }
 
-    // Kiểm tra token tồn tại và chưa hết hạn (hỗ trợ cả trường hợp có hoặc không có email)
     let sql, params;
     if (email) {
       sql = 'SELECT user_id FROM Users WHERE email = ? AND reset_token = ? AND reset_token_expiry > NOW()';
@@ -369,11 +326,10 @@ const resetPassword = async (req, res) => {
     }
 
     const user = users[0];
-    
+
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(new_password, salt);
 
-    // Cập nhật CSDL
     await db.execute(
       'UPDATE Users SET password_hash = ?, reset_token = NULL, reset_token_expiry = NULL WHERE user_id = ?',
       [passwordHash, user.user_id]
@@ -392,9 +348,6 @@ const resetPassword = async (req, res) => {
   }
 };
 
-/**
- * 6. Gửi lại mã xác thực tài khoản (Resend Verification Code)
- */
 const resendVerification = async (req, res) => {
   try {
     const { email } = req.body;

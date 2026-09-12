@@ -35,7 +35,6 @@ import {
   Filter
 } from 'lucide-react';
 
-// --- MOCK DATABASE STATE ---
 const INITIAL_PATIENTS = [
   {
     id: "PT-84729",
@@ -306,12 +305,10 @@ const INITIAL_APPOINTMENTS = [
 export default function MedicalScreen() {
   const { user } = useAuth();
 
-  // Navigation states
-  const [activeSidebarTab, setActiveSidebarTab] = useState('schedules'); // 'dashboard', 'records', 'schedules', 'profile'
-  const [currentView, setCurrentView] = useState('dashboard'); // 'dashboard', 'chart', 'diagnosis', 'profile'
-  const [doctorActiveTab, setDoctorActiveTab] = useState('clinical'); // 'clinical' or 'ai'
-  
-  // Profile form states
+  const [activeSidebarTab, setActiveSidebarTab] = useState('schedules');
+  const [currentView, setCurrentView] = useState('dashboard');
+  const [doctorActiveTab, setDoctorActiveTab] = useState('clinical');
+
   const [profileName, setProfileName] = useState('');
   const [profileSpecialty, setProfileSpecialty] = useState('');
   const [profilePhone, setProfilePhone] = useState('');
@@ -337,7 +334,7 @@ export default function MedicalScreen() {
       } else {
         setProfileName(user.full_name || '');
         setProfileSpecialty(user.specialty || 'General Practice');
-        
+
         if (user.id === 2 || user.full_name?.includes("Sarah Chen")) {
           setProfilePhone('+1 (555) 987-6543');
           setProfileAddress('Phòng khám Tim mạch MedCentral, Tầng 3, 123 Medical Way, Seattle');
@@ -363,7 +360,6 @@ export default function MedicalScreen() {
     }
   }, [user]);
 
-  // Đồng bộ lịch hẹn và hồ sơ bệnh nhân từ cơ sở dữ liệu thực tế
   useEffect(() => {
     const fetchRealData = async () => {
       if (!user) return;
@@ -371,12 +367,11 @@ export default function MedicalScreen() {
         const res = await api.get(`/appointments/doctor/${user.id}`);
         if (res.data && res.data.success) {
           const dbAppointments = res.data.appointments;
-          
-          // 1. Tạo danh sách bệnh nhân duy nhất từ các lịch hẹn thực tế
+
           const newPatients = dbAppointments.map(app => {
             const formattedDob = "12/10/1998";
             const age = 28;
-            
+
             const mappedAllergies = app.allergens && app.allergens.length > 0
               ? app.allergens.map(alg => ({ name: alg, severity: "Trung bình" }))
               : [];
@@ -413,7 +408,6 @@ export default function MedicalScreen() {
             };
           });
 
-          // 2. Định dạng danh sách cuộc hẹn cho khớp cấu trúc hiển thị
           const mappedAppointments = dbAppointments.map(app => {
             let formattedTime = '09:00 AM';
             try {
@@ -443,7 +437,6 @@ export default function MedicalScreen() {
             };
           });
 
-          // Cập nhật CSDL cục bộ: Trộn dữ liệu thực tế lên đầu tiên
           setPatients(prev => {
             const filteredPrev = prev.filter(p => !newPatients.some(np => np.id === p.id));
             return [...newPatients, ...filteredPrev];
@@ -453,7 +446,7 @@ export default function MedicalScreen() {
             const filteredPrev = prev.filter(a => !mappedAppointments.some(ma => ma.id === a.id));
             return [...mappedAppointments, ...filteredPrev];
           });
-          
+
           if (newPatients.length > 0) {
             setSelectedPatientId(newPatients[0].id);
           }
@@ -462,15 +455,14 @@ export default function MedicalScreen() {
         console.error("Lỗi khi đồng bộ dữ liệu lịch hẹn thực tế:", err);
       }
     };
-    
+
     fetchRealData();
   }, [user]);
-
 
   const handleSaveProfile = (e) => {
     e.preventDefault();
     if (!user) return;
-    
+
     const updatedProfile = {
       full_name: profileName,
       specialty: profileSpecialty,
@@ -479,11 +471,9 @@ export default function MedicalScreen() {
       biography: profileBiography,
       education: profileEducation
     };
-    
-    // Save to localStorage
+
     localStorage.setItem(`doctor_profile_${user.id}`, JSON.stringify(updatedProfile));
-    
-    // Sync into local session user
+
     const storedUserJson = localStorage.getItem('user');
     if (storedUserJson) {
       try {
@@ -494,34 +484,31 @@ export default function MedicalScreen() {
           specialty: profileSpecialty
         };
         localStorage.setItem('user', JSON.stringify(newUser));
-        // Direct reference sync
+
         user.full_name = profileName;
         user.specialty = profileSpecialty;
       } catch (err) {
         console.error(err);
       }
     }
-    
+
     showToast("Đã cập nhật hồ sơ bác sĩ thành công!");
     setCurrentView('dashboard');
     setActiveSidebarTab('schedules');
   };
-  
-  // Data states
+
   const [patients, setPatients] = useState(INITIAL_PATIENTS);
   const [appointments, setAppointments] = useState(INITIAL_APPOINTMENTS);
-  const [selectedPatientId, setSelectedPatientId] = useState('PT-84729'); // Defaults to Robert MacMillan
+  const [selectedPatientId, setSelectedPatientId] = useState('PT-84729');
   const [selectedDate, setSelectedDate] = useState(() => {
     const today = new Date();
-    return today.toISOString().split('T')[0]; // "YYYY-MM-DD"
+    return today.toISOString().split('T')[0];
   });
   const [searchQuery, setSearchQuery] = useState('');
-  
-  // Mobile UI States
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
 
-  // Diagnosis Page Form States
   const [formDiagnosis, setFormDiagnosis] = useState('');
   const [formNotes, setFormNotes] = useState('');
   const [prescriptions, setPrescriptions] = useState([
@@ -532,7 +519,6 @@ export default function MedicalScreen() {
   const [newMedDosage, setNewMedDosage] = useState('');
   const [newMedInstructions, setNewMedInstructions] = useState('');
 
-  // Đồng bộ chi tiết cuộc hẹn từ CSDL khi thay đổi selectedPatientId (đặt sau các khai báo hooks)
   useEffect(() => {
     const fetchAppointmentDetail = async () => {
       if (!selectedPatientId) return;
@@ -558,21 +544,20 @@ export default function MedicalScreen() {
 
         if (!finalPatientId) return;
 
-        // A. Tải toàn bộ lịch sử bệnh án của bệnh nhân từ CSDL
         let dbHistory = [];
         try {
           const historyRes = await api.get(`/appointments/patient/${finalPatientId}`);
           if (historyRes.data && historyRes.data.records) {
-            // Chỉ lấy các cuộc hẹn đã khám xong (Completed hoặc Validated)
+
             const completedRecords = historyRes.data.records.filter(
               rec => rec.status === 'Completed' || rec.status === 'Validated'
             );
-            
+
             dbHistory = completedRecords.map(rec => ({
               id: `h-db-${rec.appointment_id}`,
               date: new Date(rec.appointment_time).toLocaleDateString('vi-VN', { month: 'short', day: '2-digit', year: 'numeric' }),
               type: "Khám trực tiếp",
-              aiTriage: rec.ai_disease 
+              aiTriage: rec.ai_disease
                 ? `${Math.round((rec.ai_confidence || 0.8) * 100)}% khả năng được dự đoán bởi AI: ${rec.ai_disease}`
                 : "Chẩn đoán trực tiếp không qua triage",
               diagnosis: rec.doctor_corrected_disease || rec.ai_disease || "Chưa có kết luận",
@@ -595,7 +580,6 @@ export default function MedicalScreen() {
           console.error("Lỗi khi tải lịch sử bệnh án thực tế:", historyErr);
         }
 
-        // B. Tải toàn bộ lịch sử chẩn đoán AI của bệnh nhân từ CSDL
         let dbAiHistory = [];
         try {
           const aiHistoryRes = await api.get(`/diagnosis/history/${finalPatientId}`);
@@ -605,12 +589,11 @@ export default function MedicalScreen() {
         } catch (aiHistoryErr) {
           console.error("Lỗi khi tải lịch sử chẩn đoán AI thực tế:", aiHistoryErr);
         }
-        
-        // Cập nhật thông tin chi tiết vào danh sách patients
+
         setPatients(prevPatients =>
           prevPatients.map(p => {
             if (p.id === selectedPatientId) {
-              // Định dạng dị ứng thực tế từ DB
+
               const mappedAllergies = detail?.patient?.allergies && detail.patient.allergies.length > 0
                 ? detail.patient.allergies.map(alg => ({
                     name: alg.allergy_type,
@@ -638,7 +621,6 @@ export default function MedicalScreen() {
           })
         );
 
-        // Cập nhật các trường form chẩn đoán nếu đang mở ở view chẩn đoán
         if (detail) {
           setFormDiagnosis(detail.ai_prediction?.ai_disease || '');
           setFormNotes(detail.notes || `Bệnh nhân báo các triệu chứng của: ${detail.ai_prediction?.symptoms_text || ''}.`);
@@ -662,14 +644,12 @@ export default function MedicalScreen() {
     fetchAppointmentDetail();
   }, [selectedPatientId]);
 
-  // Find active patient data
   const activePatient = useMemo(() => {
     return patients.find(p => p.id === selectedPatientId) || patients[0];
   }, [patients, selectedPatientId]);
 
-  // Handle Search Filtering
   const filteredAppointments = useMemo(() => {
-    // 1. Lọc theo ngày đã chọn
+
     let list = appointments.filter(app => {
       let appDateStr = '';
       if (app.rawAppointmentId && app.rawAppointment?.appointment_time) {
@@ -683,24 +663,22 @@ export default function MedicalScreen() {
           appDateStr = app.rawAppointment.appointment_time.split(' ')[0];
         }
       } else {
-        // Cuộc hẹn mẫu được giả lập vào ngày hôm nay
+
         const today = new Date();
         appDateStr = today.toISOString().split('T')[0];
       }
       return appDateStr === selectedDate;
     });
 
-    // 2. Lọc theo thanh tìm kiếm
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      list = list.filter(app => 
+      list = list.filter(app =>
         app.name.toLowerCase().includes(q) ||
         app.symptoms.toLowerCase().includes(q) ||
         app.status.toLowerCase().includes(q)
       );
     }
 
-    // Hàm chuyển giờ thành số phút để so sánh
     const parseTimeToMinutes = (app) => {
       if (app.rawAppointment?.appointment_time) {
         const timePart = app.rawAppointment.appointment_time.split(' ')[1];
@@ -709,7 +687,7 @@ export default function MedicalScreen() {
           return h * 60 + m;
         }
       }
-      
+
       const timeStr = app.time || '09:00 AM';
       const parts = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
       if (parts) {
@@ -723,10 +701,6 @@ export default function MedicalScreen() {
       return 0;
     };
 
-    // 3. Sắp xếp theo thứ tự ưu tiên:
-    //    - Đang khám (In Progress) -> Xếp đầu tiên
-    //    - Đang chờ (Waiting)      -> Xếp ở giữa, theo giờ từ sớm nhất đến muộn nhất
-    //    - Đã xong (Completed)     -> Xếp cuối cùng
     return list.sort((a, b) => {
       const getPriority = (status) => {
         if (status === 'In Progress') return 1;
@@ -748,42 +722,37 @@ export default function MedicalScreen() {
 
   const filteredPatients = useMemo(() => {
     if (!searchQuery) return patients;
-    return patients.filter(p => 
+    return patients.filter(p =>
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (p.bloodType && p.bloodType.toLowerCase().includes(searchQuery.toLowerCase()))
     );
   }, [patients, searchQuery]);
 
-  // Show visual toast notifications
   const showToast = (message) => {
     setToastMessage(message);
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  // Switch to chart details view
   const viewPatientChart = (patientId) => {
     setSelectedPatientId(patientId);
     setCurrentView('chart');
     setActiveSidebarTab('records');
   };
 
-  // Switch to clinical diagnosis view
   const startConsultation = (patientId, defaultDiagnosis = '') => {
     setSelectedPatientId(patientId);
     const patient = patients.find(p => p.id === patientId) || patients[0];
-    
-    // Autofill clinical diagnosis form
+
     setFormDiagnosis(defaultDiagnosis || patient.aiPrediction?.disease || '');
     setFormNotes(patient.history?.[0]?.notes || `Bệnh nhân báo các triệu chứng của: ${patient.symptoms || ''}.`);
-    
-    // Set custom default prescription template for demo
-    if (patient.id === "MRN-99482") { // John Doe
+
+    if (patient.id === "MRN-99482") {
       setPrescriptions([
         { id: 1, name: "Albuterol Sulfate HFA", dosage: "90 mcg/lần xịt", instructions: "Hít 2 hơi mỗi 4-6 giờ khi cần thiết do khó thở." },
         { id: 2, name: "Benzonatate", dosage: "100 mg", instructions: "Uống 1 viên mỗi lần, ngày 3 lần khi cần thiết do ho." }
       ]);
-    } else if (patient.id === "PT-84729") { // Robert MacMillan
+    } else if (patient.id === "PT-84729") {
       setPrescriptions([
         { id: 1, name: "Metformin", dosage: "500 mg", instructions: "Uống 1 viên mỗi lần, ngày 2 lần cùng bữa ăn." },
         { id: 2, name: "Lisinopril", dosage: "10 mg", instructions: "Uống 1 viên mỗi ngày." }
@@ -793,14 +762,13 @@ export default function MedicalScreen() {
         { id: 1, name: "Amoxicillin", dosage: "500 mg", instructions: "Uống 1 viên mỗi lần, ngày 3 lần trong vòng 7 ngày." }
       ]);
     }
-    
+
     setNewMedName('');
     setNewMedDosage('');
     setNewMedInstructions('');
     setCurrentView('diagnosis');
   };
 
-  // Handle adding prescription in builder
   const handleAddMedication = (e) => {
     e.preventDefault();
     if (!newMedName.trim()) return;
@@ -817,7 +785,6 @@ export default function MedicalScreen() {
     showToast("Đã thêm thuốc: " + newMed.name);
   };
 
-  // Handle removing prescription
   const handleRemoveMedication = (id) => {
     const deletedMed = prescriptions.find(m => m.id === id);
     setPrescriptions(prescriptions.filter(m => m.id !== id));
@@ -826,9 +793,8 @@ export default function MedicalScreen() {
     }
   };
 
-  // Handle saving the consultation record
   const handleSaveConsultation = (isDraft = false) => {
-    // Add entry to patient's consultation history
+
     const historyEntry = {
       id: `h-${Date.now()}`,
       date: new Date().toLocaleDateString('vi-VN', { month: 'short', day: '2-digit', year: 'numeric' }),
@@ -840,7 +806,6 @@ export default function MedicalScreen() {
       prescriptions: [...prescriptions]
     };
 
-    // Nếu là bệnh nhân thực tế từ cơ sở dữ liệu
     if (activePatient.rawAppointmentId) {
       const presText = prescriptions.map(p => `${p.name} | ${p.dosage} | ${p.instructions}`).join('\n');
       api.put(`/appointments/${activePatient.rawAppointmentId}/diagnose`, {
@@ -859,8 +824,7 @@ export default function MedicalScreen() {
       });
     }
 
-    // Update Patients state
-    setPatients(prevPatients => 
+    setPatients(prevPatients =>
       prevPatients.map(p => {
         if (p.id === activePatient.id) {
           return {
@@ -872,7 +836,6 @@ export default function MedicalScreen() {
       })
     );
 
-    // Update Appointments list (mark as Completed/In Progress)
     setAppointments(prevApps =>
       prevApps.map(app => {
         if (app.patientId === activePatient.id) {
@@ -894,21 +857,20 @@ export default function MedicalScreen() {
     }
   };
 
-  // Dynamic stat calculators
   const stats = useMemo(() => {
-    const total = appointments.length + 10; // Match 14 total patients in design
+    const total = appointments.length + 10;
     const waiting = appointments.filter(a => a.status === "Waiting").length;
-    const completed = appointments.filter(a => a.status === "Completed").length + 4; // Match 5 in design
+    const completed = appointments.filter(a => a.status === "Completed").length + 4;
     return {
       total,
-      emergency: 2, // Static 2 emergency cases as shown
+      emergency: 2,
       completed
     };
   }, [appointments]);
 
   return (
     <div className="flex bg-[#FAF6F3] min-h-screen text-[#4A3E39] font-sans antialiased">
-      {/* Visual Toast Notification Banner */}
+
       {toastMessage && (
         <div className="fixed top-4 right-4 bg-[#843F2E] text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-2.5 z-50 animate-bounce text-xs font-semibold">
           <CheckCircle2 className="w-4 h-4 text-[#F3D7D0]" />
@@ -916,13 +878,12 @@ export default function MedicalScreen() {
         </div>
       )}
 
-      {/* --- SIDEBAR CONTAINER --- */}
       <aside className={`
         fixed inset-y-0 left-0 bg-[#FCF6F3] border-r border-[#EFE5E0] w-64 z-30 transition-transform duration-300 transform
         ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-0 lg:translate-x-0'}
         lg:static lg:block shrink-0
       `}>
-        {/* Sidebar Header */}
+
         <div className="p-6 border-b border-[#EFE5E0] flex justify-between items-center">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-[#D3765F] flex items-center justify-center text-white shadow-md shadow-[#D3765F]/20">
@@ -933,8 +894,8 @@ export default function MedicalScreen() {
               <span className="text-[10px] font-bold text-[#A8968F] uppercase tracking-wider">Cổng Bác sĩ</span>
             </div>
           </div>
-          {/* Mobile close button */}
-          <button 
+
+          <button
             onClick={() => setMobileMenuOpen(false)}
             className="lg:hidden text-[#843F2E] hover:bg-[#F2E8E4] p-1.5 rounded-lg transition-colors"
           >
@@ -942,7 +903,6 @@ export default function MedicalScreen() {
           </button>
         </div>
 
-        {/* Sidebar Navigation */}
         <nav className="p-4 space-y-1.5">
           <button
             onClick={() => {
@@ -1015,9 +975,8 @@ export default function MedicalScreen() {
           </a>
         </nav>
 
-        {/* Sidebar Footer User Info */}
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-[#EFE5E0] bg-[#FCF6F3]">
-          <div 
+          <div
             onClick={() => {
               setActiveSidebarTab('profile');
               setCurrentView('profile');
@@ -1039,33 +998,30 @@ export default function MedicalScreen() {
         </div>
       </aside>
 
-      {/* Backdrop for mobile sidebar */}
       {mobileMenuOpen && (
-        <div 
+        <div
           onClick={() => setMobileMenuOpen(false)}
           className="fixed inset-0 bg-black/25 backdrop-blur-xs z-25 lg:hidden"
         />
       )}
 
-      {/* --- MAIN PAGE WRAPPER --- */}
       <div className="flex-1 flex flex-col min-w-0 max-h-screen overflow-y-auto">
-        {/* --- DYNAMIC HEADER --- */}
+
         <header className="sticky top-0 bg-[#FAF6F3]/95 backdrop-blur-md px-6 py-4 flex items-center justify-between border-b border-[#EFE5E0] z-20">
           <div className="flex items-center gap-3 flex-1 max-w-lg">
-            <button 
+            <button
               onClick={() => setMobileMenuOpen(true)}
               className="lg:hidden p-2 text-[#843F2E] hover:bg-[#F2E8E4] rounded-xl transition-all"
             >
               <Menu className="w-5 h-5" />
             </button>
 
-            {/* Global Search Bar */}
             <div className="relative w-full">
               <input
                 type="text"
                 placeholder={
-                  currentView === 'dashboard' 
-                    ? "Tìm kiếm bệnh nhân, mã số, hoặc ghi chú..." 
+                  currentView === 'dashboard'
+                    ? "Tìm kiếm bệnh nhân, mã số, hoặc ghi chú..."
                     : "Tìm kiếm mã bệnh nhân, tên bệnh nhân..."
                 }
                 value={searchQuery}
@@ -1074,7 +1030,7 @@ export default function MedicalScreen() {
               />
               <Search className="w-4 h-4 text-[#A8968F] absolute left-3.5 top-3" />
               {searchQuery && (
-                <button 
+                <button
                   onClick={() => setSearchQuery('')}
                   className="absolute right-3.5 top-2.5 text-[#A8968F] hover:text-[#843F2E]"
                 >
@@ -1084,17 +1040,16 @@ export default function MedicalScreen() {
             </div>
           </div>
 
-          {/* Quick Actions Header */}
           <div className="flex items-center gap-3.5 ml-4">
-            <button 
+            <button
               onClick={() => showToast("Đã tải danh sách thông báo (0 chưa đọc)")}
               className="relative p-2.5 bg-white text-[#D3765F] hover:text-[#843F2E] hover:bg-[#FBEEE9]/30 rounded-full border border-[#EFE5E0] shadow-xs transition-all active:scale-95"
             >
               <Bell className="w-4.5 h-4.5" />
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#D3765F] rounded-full border border-white"></span>
             </button>
-            
-            <button 
+
+            <button
               onClick={() => showToast("Đã truy cập menu cài đặt")}
               className="p-2.5 bg-white text-[#A8968F] hover:text-[#843F2E] hover:bg-[#FBEEE9]/30 rounded-full border border-[#EFE5E0] shadow-xs transition-all active:scale-95"
             >
@@ -1103,13 +1058,11 @@ export default function MedicalScreen() {
           </div>
         </header>
 
-        {/* --- MAIN SCROLLABLE CONTENT --- */}
         <main className="p-6 md:p-8 flex-1 max-w-7xl w-full mx-auto space-y-6">
-          
-          {/* VIEW 1: CLINICIAN DASHBOARD SCREEN */}
+
           {currentView === 'dashboard' && (
             <div className="space-y-6 animate-fadeIn">
-              {/* Welcome Message Banner */}
+
               <div className="space-y-1">
                 <h2 className="text-2xl font-extrabold text-[#4A3E39] leading-tight">
                   Chào buổi sáng, Bác sĩ {profileName || user?.full_name || 'Bác sĩ'}
@@ -1119,9 +1072,8 @@ export default function MedicalScreen() {
                 </p>
               </div>
 
-              {/* Dynamic Stats Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                {/* Stat 1: Total Patients */}
+
                 <div className="bg-white rounded-2xl p-5 border border-[#EFE5E0] shadow-xs flex items-center justify-between transition-transform hover:-translate-y-0.5 duration-200">
                   <div className="space-y-1.5">
                     <span className="block text-[10px] font-extrabold text-[#A8968F] uppercase tracking-wider">Tổng bệnh nhân</span>
@@ -1132,7 +1084,6 @@ export default function MedicalScreen() {
                   </div>
                 </div>
 
-                {/* Stat 2: Emergency Cases */}
                 <div className="bg-white rounded-2xl p-5 border border-[#EFE5E0] shadow-xs flex items-center justify-between transition-transform hover:-translate-y-0.5 duration-200">
                   <div className="space-y-1.5">
                     <span className="block text-[10px] font-extrabold text-[#A8968F] uppercase tracking-wider">Trường hợp khẩn cấp</span>
@@ -1143,7 +1094,6 @@ export default function MedicalScreen() {
                   </div>
                 </div>
 
-                {/* Stat 3: Completed */}
                 <div className="bg-white rounded-2xl p-5 border border-[#EFE5E0] shadow-xs flex items-center justify-between transition-transform hover:-translate-y-0.5 duration-200">
                   <div className="space-y-1.5">
                     <span className="block text-[10px] font-extrabold text-[#A8968F] uppercase tracking-wider">Đã hoàn thành</span>
@@ -1155,7 +1105,6 @@ export default function MedicalScreen() {
                 </div>
               </div>
 
-              {/* Appointments List Card */}
               <div className="bg-white rounded-2xl border border-[#EFE5E0] shadow-xs overflow-hidden">
                 <div className="px-6 py-5 border-b border-[#EFE5E0] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
@@ -1169,7 +1118,7 @@ export default function MedicalScreen() {
                       />
                     </div>
                   </div>
-                  <button 
+                  <button
                     onClick={() => {
                       const today = new Date().toISOString().split('T')[0];
                       setSelectedDate(today);
@@ -1181,7 +1130,6 @@ export default function MedicalScreen() {
                   </button>
                 </div>
 
-                {/* Responsive Appointment Table */}
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
@@ -1199,9 +1147,9 @@ export default function MedicalScreen() {
                           const patientInfo = patients.find(p => p.id === app.patientId) || {};
                           return (
                             <tr key={app.id} className="hover:bg-[#FAF6F3]/50 transition-colors group">
-                              {/* Patient Profile Cell */}
+
                               <td className="px-6 py-4.5">
-                                <div 
+                                <div
                                   onClick={() => viewPatientChart(app.patientId)}
                                   className="flex items-center gap-3 cursor-pointer group-hover:opacity-95"
                                 >
@@ -1227,14 +1175,12 @@ export default function MedicalScreen() {
                                 </div>
                               </td>
 
-                              {/* Symptoms Cell */}
                               <td className="px-6 py-4.5">
                                 <span className="text-xs font-semibold text-[#80726B] leading-relaxed">
                                   {app.symptoms}
                                 </span>
                               </td>
 
-                              {/* Status Badge Cell */}
                               <td className="px-6 py-4.5">
                                 <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase border ${
                                   app.status === 'Completed'
@@ -1253,7 +1199,6 @@ export default function MedicalScreen() {
                                 </span>
                               </td>
 
-                              {/* Actions Button Cell */}
                               <td className="px-6 py-4.5 text-right">
                                 {app.status === 'Completed' ? (
                                   <button
@@ -1295,10 +1240,9 @@ export default function MedicalScreen() {
             </div>
           )}
 
-          {/* VIEW 2: PATIENT HISTORY & CHART SCREEN */}
           {currentView === 'chart' && (
             <div className="space-y-6 animate-fadeIn">
-              {/* Patient Navigation Header */}
+
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#EFE5E0] pb-5">
                 <div className="flex items-center gap-3">
                   <button
@@ -1325,14 +1269,14 @@ export default function MedicalScreen() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <button 
+                  <button
                     onClick={() => window.print()}
                     className="flex items-center gap-1.5 bg-white text-[#6B5E59] hover:bg-[#F7ECE8] hover:text-[#843F2E] text-xs font-extrabold px-4 py-2.5 rounded-xl border border-[#EFE5E0] shadow-xs transition-all"
                   >
                     <Printer className="w-4 h-4" />
                     <span>In hồ sơ</span>
                   </button>
-                  <button 
+                  <button
                     onClick={() => startConsultation(activePatient.id)}
                     className="flex items-center gap-1.5 bg-[#D3765F] text-white hover:bg-[#843F2E] text-xs font-extrabold px-4 py-2.5 rounded-xl shadow-md shadow-[#D3765F]/15 transition-all hover:shadow active:scale-95"
                   >
@@ -1342,18 +1286,15 @@ export default function MedicalScreen() {
                 </div>
               </div>
 
-              {/* AI Patient Summary Card (Top Banner) */}
-              <AISummaryCard 
-                appointmentId={activePatient?.rawAppointmentId} 
-                patient={activePatient} 
+              <AISummaryCard
+                appointmentId={activePatient?.rawAppointmentId}
+                patient={activePatient}
               />
 
-              {/* Two Column Layout */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                
-                {/* Left Side: Demographic Cards */}
+
                 <div className="lg:col-span-4 space-y-6">
-                  {/* Patient Profile Demographics Card */}
+
                   <div className="bg-white rounded-2xl border border-[#EFE5E0] shadow-xs p-6 space-y-6">
                     <div className="flex flex-col items-center text-center space-y-3">
                       <img
@@ -1368,7 +1309,6 @@ export default function MedicalScreen() {
                         </p>
                       </div>
 
-                      {/* Status Badges */}
                       <div className="flex items-center gap-1.5">
                         <span className="bg-[#FAF6F3] text-[#80726B] border border-[#EFE5E0] text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider">
                           {activePatient.status}
@@ -1378,7 +1318,6 @@ export default function MedicalScreen() {
                         </span>
                       </div>
 
-                      {/* Tình trạng bệnh hiện tại */}
                       <div className="w-full bg-[#FCF9F7] rounded-xl p-3 border border-[#EFE5E0]/60 text-left mt-2">
                         <span className="block text-[9px] font-bold text-[#A8968F] uppercase">Chẩn đoán hiện tại</span>
                         {activePatient.history && activePatient.history.length > 0 ? (
@@ -1403,7 +1342,6 @@ export default function MedicalScreen() {
                       </div>
                     </div>
 
-                    {/* Vitals Grid Table */}
                     <div className="grid grid-cols-2 gap-4 border-t border-[#FAF6F3] pt-5">
                       <div className="bg-[#FCF9F7] rounded-xl p-3 border border-[#EFE5E0]/60">
                         <div className="flex items-center gap-1.5 text-[9px] font-bold text-[#A8968F] uppercase">
@@ -1441,7 +1379,6 @@ export default function MedicalScreen() {
                       </div>
                     </div>
 
-                    {/* Chronic Conditions */}
                     <div className="border-t border-[#FAF6F3] pt-5 space-y-2.5">
                       <span className="block text-[10px] font-extrabold text-[#A8968F] uppercase tracking-wider">Bệnh lý mãn tính</span>
                       {activePatient.chronicConditions && activePatient.chronicConditions.length > 0 ? (
@@ -1459,7 +1396,6 @@ export default function MedicalScreen() {
                     </div>
                   </div>
 
-                  {/* Patient Contact Card */}
                   <div className="bg-white rounded-2xl border border-[#EFE5E0] shadow-xs p-6 space-y-4">
                     <h4 className="text-[10px] font-extrabold text-[#A8968F] uppercase tracking-wider">Thông tin liên lạc</h4>
                     <div className="space-y-3.5">
@@ -1482,21 +1418,19 @@ export default function MedicalScreen() {
                   </div>
                 </div>
 
-                {/* Right Side: Allergies & Timeline */}
                 <div className="lg:col-span-8 space-y-6">
-                  
-                  {/* Allergy Alert Card */}
+
                   <div className="bg-[#FCECE8] rounded-2xl border border-[#F5DDD7] p-5 flex items-start gap-4 shadow-2xs">
                     <div className="p-3 bg-[#EFAAA5]/30 rounded-xl text-[#843F2E] border border-[#EFAAA5]/40 shrink-0">
                       <AlertTriangle className="w-6 h-6 text-[#843F2E]" />
                     </div>
                     <div className="space-y-3 flex-1 min-w-0">
                       <h4 className="text-sm font-extrabold text-[#843F2E] leading-none">Cảnh báo dị ứng đặc biệt nghiêm trọng</h4>
-                      
+
                       {activePatient.allergies && activePatient.allergies.length > 0 ? (
                         <div className="flex gap-2 flex-wrap">
                           {activePatient.allergies.map((allergy, idx) => (
-                            <span 
+                            <span
                               key={idx}
                               className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors ${
                                 allergy.severity.includes('nghiêm trọng') || allergy.severity.includes('Severe')
@@ -1515,7 +1449,6 @@ export default function MedicalScreen() {
                     </div>
                   </div>
 
-                  {/* Consultation History Card */}
                   <div className="bg-white rounded-2xl border border-[#EFE5E0] shadow-xs p-6 space-y-5">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       <div>
@@ -1523,7 +1456,7 @@ export default function MedicalScreen() {
                         <p className="text-xs font-semibold text-[#80726B] mt-0.5">Hồ sơ thăm khám lâm sàng được sắp xếp theo thời gian.</p>
                       </div>
 
-                      <button 
+                      <button
                         onClick={() => showToast("Đã tải bộ lọc thời gian")}
                         className="flex items-center gap-1.5 text-xs font-bold text-[#6B5E59] hover:text-[#843F2E] transition-all bg-[#FAF6F3] rounded-xl px-3.5 py-2 border border-[#EFE5E0]/60 ml-auto sm:ml-0"
                       >
@@ -1532,7 +1465,6 @@ export default function MedicalScreen() {
                       </button>
                     </div>
 
-                    {/* Tab selector */}
                     <div className="flex border-b border-[#EFE5E0] mb-4">
                       <button
                         onClick={() => setDoctorActiveTab('clinical')}
@@ -1558,16 +1490,14 @@ export default function MedicalScreen() {
                       </button>
                     </div>
 
-                    {/* Timeline List */}
                     <div className="space-y-6 pt-2">
                       {doctorActiveTab === 'clinical' ? (
                         activePatient.history && activePatient.history.length > 0 ? (
                           activePatient.history.map((record, index) => (
                             <div key={record.id || index} className="relative pl-6 border-l-2 border-[#EFE5E0] last:border-0 pb-1">
-                              {/* Timeline Point Indicator */}
+
                               <div className="absolute left-[-5px] top-1.5 w-2.5 h-2.5 rounded-full bg-[#D3765F] border border-white"></div>
-                              
-                              {/* Record Summary Box */}
+
                               <div className="space-y-4">
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <span className="text-xs font-extrabold text-[#843F2E]">{record.date}</span>
@@ -1576,7 +1506,6 @@ export default function MedicalScreen() {
                                   </span>
                                 </div>
 
-                                {/* AI Triage Card Box */}
                                 {record.aiTriage && (
                                   <div className="bg-[#FCF9F7] rounded-xl p-3.5 border border-[#EFE5E0] space-y-1.5">
                                     <div className="flex items-center gap-2 text-[#D3765F] font-bold text-[10px] uppercase">
@@ -1589,7 +1518,6 @@ export default function MedicalScreen() {
                                   </div>
                                 )}
 
-                                {/* Medical Diagnosis Details */}
                                 <div className="space-y-1">
                                   <span className="block text-[9px] font-bold text-[#A8968F] uppercase">Chẩn đoán của Bác sĩ</span>
                                   <p className="text-xs font-extrabold text-[#4A3E39]">
@@ -1597,7 +1525,6 @@ export default function MedicalScreen() {
                                   </p>
                                 </div>
 
-                                {/* Clinical Notes details */}
                                 <div className="space-y-1">
                                   <span className="block text-[9px] font-bold text-[#A8968F] uppercase">Ghi chú bệnh án lâm sàng</span>
                                   <p className="text-xs font-semibold text-[#80726B] leading-relaxed">
@@ -1605,7 +1532,6 @@ export default function MedicalScreen() {
                                   </p>
                                 </div>
 
-                                {/* Prescription Details (if exists) */}
                                 {record.prescriptions && record.prescriptions.length > 0 && (
                                   <div className="space-y-2">
                                     <span className="block text-[9px] font-bold text-[#A8968F] uppercase">Thuốc được kê đơn</span>
@@ -1619,9 +1545,8 @@ export default function MedicalScreen() {
                                   </div>
                                 )}
 
-                                {/* Footer Action Links */}
                                 <div className="flex gap-4 pt-1 flex-wrap">
-                                  <button 
+                                  <button
                                     onClick={() => showToast("Đang mở chi tiết bệnh án...")}
                                     className="inline-flex items-center gap-1 text-[11px] font-extrabold text-[#D3765F] hover:text-[#843F2E] hover:underline"
                                   >
@@ -1629,7 +1554,7 @@ export default function MedicalScreen() {
                                     <ExternalLink className="w-3 h-3" />
                                   </button>
                                   {record.labs && (
-                                    <button 
+                                    <button
                                       onClick={() => showToast("Đang tải kết quả xét nghiệm...")}
                                       className="inline-flex items-center gap-1 text-[11px] font-extrabold text-[#D3765F] hover:text-[#843F2E] hover:underline"
                                     >
@@ -1648,7 +1573,7 @@ export default function MedicalScreen() {
                                 <FlaskConical className="w-4.5 h-4.5 animate-pulse" />
                                 <span>Kết quả phân tích & dự đoán từ AI (Triage)</span>
                               </div>
-                              
+
                               <div className="py-2">
                                 <span className="text-xs font-semibold text-[#80726B] block">Chẩn đoán dự kiến:</span>
                                 <span className="text-lg font-extrabold text-[#843F2E] block mt-1">
@@ -1694,9 +1619,9 @@ export default function MedicalScreen() {
                         activePatient.aiHistory && activePatient.aiHistory.length > 0 ? (
                           activePatient.aiHistory.map((record, index) => (
                             <div key={record.prediction_id || index} className="relative pl-6 border-l-2 border-[#EFE5E0] last:border-0 pb-1">
-                              {/* Timeline Point Indicator */}
+
                               <div className="absolute left-[-5px] top-1.5 w-2.5 h-2.5 rounded-full bg-[#D3765F] border border-white"></div>
-                              
+
                               <div className="space-y-3">
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <span className="text-xs font-extrabold text-[#843F2E]">
@@ -1746,7 +1671,6 @@ export default function MedicalScreen() {
                                     </div>
                                   )}
 
-                                  {/* Chat history logs inside card if exist */}
                                   {record.chat_history && (() => {
                                     try {
                                       const chatArr = JSON.parse(record.chat_history);
@@ -1792,7 +1716,6 @@ export default function MedicalScreen() {
             </div>
           )}
 
-          {/* VIEW 5: PATIENT LIST SCREEN */}
           {currentView === 'patient_list' && (
             <div className="space-y-6 animate-fadeIn">
               <div>
@@ -1800,7 +1723,6 @@ export default function MedicalScreen() {
                 <p className="text-xs text-[#80726B] mt-1">Danh sách bệnh nhân quản lý trong hệ thống và tình trạng bệnh lý.</p>
               </div>
 
-              {/* Grid of Patient Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredPatients.length > 0 ? (
                   filteredPatients.map(p => {
@@ -1812,9 +1734,9 @@ export default function MedicalScreen() {
                     return (
                       <div key={p.id} className="bg-white rounded-3xl border border-[#EFE5E0] p-5 space-y-4 hover:shadow-md transition-all flex flex-col justify-between">
                         <div className="flex items-center gap-4">
-                          <img 
-                            src={p.avatar} 
-                            alt={p.name} 
+                          <img
+                            src={p.avatar}
+                            alt={p.name}
                             className="w-12 h-12 rounded-2xl object-cover border border-[#EFE5E0]"
                           />
                           <div>
@@ -1827,7 +1749,6 @@ export default function MedicalScreen() {
                           </div>
                         </div>
 
-                        {/* Disease Condition Section */}
                         <div className="bg-[#FCF9F7] rounded-xl p-3 border border-[#EFE5E0]/60 space-y-1">
                           <span className="block text-[9px] font-bold text-[#A8968F] uppercase">Tình trạng bệnh hiện tại</span>
                           {hasHistory ? (
@@ -1851,7 +1772,6 @@ export default function MedicalScreen() {
                           )}
                         </div>
 
-                        {/* Action buttons */}
                         <div className="flex gap-2.5 pt-2">
                           <button
                             onClick={() => viewPatientChart(p.id)}
@@ -1878,10 +1798,9 @@ export default function MedicalScreen() {
             </div>
           )}
 
-          {/* VIEW 3: CLINICAL DIAGNOSIS & EVALUATION FORM */}
           {currentView === 'diagnosis' && (
             <div className="space-y-6 animate-fadeIn">
-              {/* Form Navigation Header */}
+
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#EFE5E0] pb-5">
                 <div className="flex items-center gap-3">
                   <button
@@ -1905,13 +1824,12 @@ export default function MedicalScreen() {
                   </div>
                 </div>
 
-                {/* Vitals Banner Badges */}
                 <div className="flex items-center gap-2">
                   <span className="bg-[#E6F5EE] text-[#2A7E5C] border border-[#C6ECD9] text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5">
                     <Check className="w-3.5 h-3.5" />
                     <span>Sinh hiệu ổn định</span>
                   </span>
-                  
+
                   {activePatient.allergies && activePatient.allergies.length > 0 && (
                     <span className="bg-[#FCECE8] text-[#843F2E] border border-[#F5DDD7] text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5">
                       <AlertTriangle className="w-3.5 h-3.5" />
@@ -1921,9 +1839,8 @@ export default function MedicalScreen() {
                 </div>
               </div>
 
-              {/* AI Patient Summary Card (Top Banner with Quick Insert to Doctor Notes) */}
-              <AISummaryCard 
-                appointmentId={activePatient?.rawAppointmentId} 
+              <AISummaryCard
+                appointmentId={activePatient?.rawAppointmentId}
                 patient={activePatient}
                 onInsertToNotes={(summaryText) => {
                   setFormNotes(prev => prev ? `${prev}\n\n[Tiền sử bệnh lý AI tóm tắt]:\n${summaryText}` : `[Tiền sử bệnh lý AI tóm tắt]:\n${summaryText}`);
@@ -1931,12 +1848,10 @@ export default function MedicalScreen() {
                 }}
               />
 
-              {/* Two Column Form Layout */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                
-                {/* Left Side: Clinical Inputs, AI Predictions */}
+
                 <div className="lg:col-span-5 space-y-6">
-                  {/* Symptoms Card Block */}
+
                   <div className="bg-white rounded-2xl border border-[#EFE5E0] shadow-xs p-6 space-y-4">
                     <div className="flex items-center gap-2.5 border-b border-[#FAF6F3] pb-3">
                       <div className="w-8 h-8 rounded-lg bg-[#FBEEE9] text-[#D3765F] flex items-center justify-center">
@@ -1955,7 +1870,6 @@ export default function MedicalScreen() {
                     </div>
                   </div>
 
-                  {/* AI Predicted Diagnosis Confidence Gauge Card */}
                   <div className="bg-white rounded-2xl border border-[#EFE5E0] shadow-xs p-6 space-y-5">
                     <div className="flex justify-between items-center border-b border-[#FAF6F3] pb-3">
                       <div className="flex items-center gap-2.5">
@@ -1970,21 +1884,20 @@ export default function MedicalScreen() {
                     </div>
 
                     <div className="space-y-4">
-                      {/* Top Pred 1 */}
+
                       <div className="space-y-2">
                         <div className="flex justify-between text-xs font-extrabold">
                           <span className="text-[#4A3E39]">{activePatient.aiPrediction?.disease || "Bệnh hô hấp nhẹ"}</span>
                           <span className="text-[#2A7E5C]">Độ tin cậy {activePatient.aiPrediction?.confidence || 88}%</span>
                         </div>
                         <div className="w-full bg-[#FAF6F3] rounded-full h-2">
-                          <div 
-                            className="bg-emerald-500 h-2 rounded-full transition-all duration-500" 
+                          <div
+                            className="bg-emerald-500 h-2 rounded-full transition-all duration-500"
                             style={{ width: `${activePatient.aiPrediction?.confidence || 88}%` }}
                           />
                         </div>
                       </div>
 
-                      {/* Top Pred 2 */}
                       {activePatient.aiPrediction?.otherDiseases && activePatient.aiPrediction.otherDiseases.map((other, idx) => (
                         <div key={idx} className="space-y-2">
                           <div className="flex justify-between text-xs font-extrabold">
@@ -1992,8 +1905,8 @@ export default function MedicalScreen() {
                             <span className="text-[#6B5E59]">Độ tin cậy {other.confidence}%</span>
                           </div>
                           <div className="w-full bg-[#FAF6F3] rounded-full h-2">
-                            <div 
-                              className="bg-[#A8968F] h-2 rounded-full transition-all duration-500" 
+                            <div
+                              className="bg-[#A8968F] h-2 rounded-full transition-all duration-500"
                               style={{ width: `${other.confidence}%` }}
                             />
                           </div>
@@ -2007,10 +1920,9 @@ export default function MedicalScreen() {
                   </div>
                 </div>
 
-                {/* Right Side: Physician Interactive Diagnosis & Plan Builder */}
                 <div className="lg:col-span-7">
                   <div className="bg-white rounded-2xl border border-[#EFE5E0] shadow-xs p-6 space-y-6">
-                    
+
                     <div className="flex items-center gap-2.5 border-b border-[#FAF6F3] pb-3">
                       <div className="w-8 h-8 rounded-lg bg-[#FCF6F3] text-[#D3765F] flex items-center justify-center">
                         <Heart className="w-4.5 h-4.5" />
@@ -2018,7 +1930,6 @@ export default function MedicalScreen() {
                       <h3 className="text-sm font-extrabold text-[#4A3E39] uppercase tracking-wide">Đánh giá bệnh lý & Phác đồ điều trị</h3>
                     </div>
 
-                    {/* Input: Final Diagnosis */}
                     <div className="space-y-2">
                       <label className="block text-xs font-extrabold text-[#4A3E39] uppercase tracking-wider">
                         Chẩn đoán cuối cùng của Bác sĩ <span className="text-red-500">*</span>
@@ -2039,13 +1950,12 @@ export default function MedicalScreen() {
                       </span>
                     </div>
 
-                    {/* Interactive Prescription Builder */}
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <label className="block text-xs font-extrabold text-[#4A3E39] uppercase tracking-wider">
                           Trình kê đơn thuốc chi tiết
                         </label>
-                        <button 
+                        <button
                           type="button"
                           onClick={() => {
                             setNewMedName("Amoxicillin 500mg");
@@ -2059,7 +1969,6 @@ export default function MedicalScreen() {
                         </button>
                       </div>
 
-                      {/* Prescription Table */}
                       <div className="border border-[#EFE5E0] rounded-xl overflow-x-auto shadow-xs">
                         <table className="w-full min-w-[500px] text-left border-collapse">
                           <thead>
@@ -2089,7 +1998,7 @@ export default function MedicalScreen() {
                                 </td>
                               </tr>
                             ))}
-                            {/* Input Form Fields for adding new Medication inline */}
+
                             <tr className="bg-[#FCF9F7]/40 border-t-2 border-dashed border-[#EFE5E0]">
                               <td className="px-3 py-2">
                                 <input
@@ -2133,7 +2042,6 @@ export default function MedicalScreen() {
                       </div>
                     </div>
 
-                    {/* Input: Clinical Notes */}
                     <div className="space-y-2">
                       <label className="block text-xs font-extrabold text-[#4A3E39] uppercase tracking-wider">
                         Ghi chú lâm sàng & Dặn dò bác sĩ
@@ -2147,7 +2055,6 @@ export default function MedicalScreen() {
                       />
                     </div>
 
-                    {/* Bottom Action Footer */}
                     <div className="flex flex-col sm:flex-row items-center justify-end gap-3.5 pt-4 border-t border-[#FAF6F3]">
                       <button
                         type="button"
@@ -2173,7 +2080,6 @@ export default function MedicalScreen() {
             </div>
           )}
 
-          {/* VIEW 5: PRINT PRESCRIPTION VIEW (POST DIAGNOSIS) */}
           {currentView === 'print_prescription' && (
             <div className="space-y-6 animate-fadeIn">
               <div className="flex items-center gap-3 border-b border-[#EFE5E0] pb-5">
@@ -2193,20 +2099,19 @@ export default function MedicalScreen() {
               </div>
 
               <div className="flex justify-center items-center py-6">
-                <PrescriptionExport 
+                <PrescriptionExport
                   prescriptionData={{
                     patientName: activePatient?.name || 'Bệnh nhân',
                     diagnosis: formDiagnosis || 'Tăng huyết áp vô căn',
                     medicines: prescriptions,
                     doctorSignature: user?.full_name || 'Bác sĩ điều trị'
-                  }} 
-                  appointment_id={activePatient?.rawAppointmentId || activePatient?.id || 'demo'} 
+                  }}
+                  appointment_id={activePatient?.rawAppointmentId || activePatient?.id || 'demo'}
                 />
               </div>
             </div>
           )}
 
-          {/* VIEW 4: DOCTOR PROFILE EDIT SCREEN */}
           {currentView === 'profile' && (
             <div className="space-y-6 animate-fadeIn">
               <div className="flex items-center gap-3 border-b border-[#EFE5E0] pb-5">
@@ -2228,7 +2133,7 @@ export default function MedicalScreen() {
               <div className="bg-white rounded-2xl border border-[#EFE5E0] shadow-xs p-6 max-w-3xl">
                 <form onSubmit={handleSaveProfile} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Họ và tên */}
+
                     <div className="space-y-1.5">
                       <label className="block text-xs font-bold text-[#4A3E39] uppercase tracking-wider">Họ và tên bác sĩ</label>
                       <input
@@ -2240,7 +2145,6 @@ export default function MedicalScreen() {
                       />
                     </div>
 
-                    {/* Chuyên khoa */}
                     <div className="space-y-1.5">
                       <label className="block text-xs font-bold text-[#4A3E39] uppercase tracking-wider">Chuyên khoa</label>
                       <select
@@ -2255,7 +2159,6 @@ export default function MedicalScreen() {
                       </select>
                     </div>
 
-                    {/* Email (Readonly) */}
                     <div className="space-y-1.5">
                       <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Địa chỉ Email (Không thể thay đổi)</label>
                       <input
@@ -2266,7 +2169,6 @@ export default function MedicalScreen() {
                       />
                     </div>
 
-                    {/* Số điện thoại */}
                     <div className="space-y-1.5">
                       <label className="block text-xs font-bold text-[#4A3E39] uppercase tracking-wider">Số điện thoại liên hệ</label>
                       <input
@@ -2279,7 +2181,6 @@ export default function MedicalScreen() {
                     </div>
                   </div>
 
-                  {/* Địa chỉ phòng khám */}
                   <div className="space-y-1.5">
                     <label className="block text-xs font-bold text-[#4A3E39] uppercase tracking-wider">Địa chỉ phòng khám thực tế</label>
                     <input
@@ -2291,7 +2192,6 @@ export default function MedicalScreen() {
                     />
                   </div>
 
-                  {/* Giới thiệu bản thân */}
                   <div className="space-y-1.5">
                     <label className="block text-xs font-bold text-[#4A3E39] uppercase tracking-wider">Giới thiệu bản thân (Biography)</label>
                     <textarea
@@ -2303,7 +2203,6 @@ export default function MedicalScreen() {
                     />
                   </div>
 
-                  {/* Kinh nghiệm & Học vấn */}
                   <div className="space-y-1.5">
                     <label className="block text-xs font-bold text-[#4A3E39] uppercase tracking-wider">Kinh nghiệm & Học vấn (Education)</label>
                     <textarea
@@ -2315,7 +2214,6 @@ export default function MedicalScreen() {
                     />
                   </div>
 
-                  {/* Action buttons */}
                   <div className="flex justify-end gap-3.5 pt-4 border-t border-[#FAF6F3]">
                     <button
                       type="button"

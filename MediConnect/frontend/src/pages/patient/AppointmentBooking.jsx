@@ -94,7 +94,7 @@ const AppointmentBooking = () => {
   };
 
   useEffect(() => {
-    // Load updated profiles from localStorage
+
     setSpecialists(prev => prev.map(doc => {
       const savedProfile = localStorage.getItem(`doctor_profile_${doc.id}`);
       if (savedProfile) {
@@ -119,7 +119,6 @@ const AppointmentBooking = () => {
 
   const selectedDoctor = specialists.find(d => d.id === selectedDoctorId) || specialists[0];
 
-  // Tải danh sách các khung giờ đã đặt của bác sĩ vào ngày được chọn
   useEffect(() => {
     const fetchBookedSlots = async () => {
       if (!selectedDoctorId || !selectedDate) return;
@@ -135,17 +134,15 @@ const AppointmentBooking = () => {
     fetchBookedSlots();
   }, [selectedDoctorId, selectedDate]);
 
-  // Dynamic free slots for each doctor (only showing available slots)
   const timeSlots = useMemo(() => {
     if (!selectedDoctor) return [];
-    
-    // Define free slots for each doctor based on their ID
+
     const slotsMap = {
       2: ['09:00 AM', '10:30 AM', '11:15 AM', '02:30 PM', '04:00 PM'],
       3: ['08:30 AM', '10:00 AM', '01:30 PM', '03:00 PM', '05:00 PM'],
       4: ['09:15 AM', '11:00 AM', '02:00 PM', '03:30 PM', '04:30 PM']
     };
-    
+
     const isTimeRestricted = (timeStr) => {
       const match = timeStr.match(/^(\d{2}):(\d{2})\s*(AM|PM)$/i);
       if (!match) return false;
@@ -154,13 +151,13 @@ const AppointmentBooking = () => {
       const ampm = match[3].toUpperCase();
       if (ampm === 'PM' && hour !== 12) hour += 12;
       if (ampm === 'AM' && hour === 12) hour = 0;
-      
+
       const timeVal = hour * 60 + minute;
-      const startRestricted = 11 * 60; // 11:00 AM
-      const endRestricted = 13 * 60;  // 01:00 PM
+      const startRestricted = 11 * 60;
+      const endRestricted = 13 * 60;
       return timeVal >= startRestricted && timeVal <= endRestricted;
     };
-    
+
     const doctorSlots = slotsMap[selectedDoctor.id] || ['09:00 AM', '10:30 AM', '02:30 PM'];
     return doctorSlots
       .filter(time => !isTimeRestricted(time) && !bookedSlots.includes(time))
@@ -170,7 +167,6 @@ const AppointmentBooking = () => {
       }));
   }, [selectedDoctor, bookedSlots]);
 
-  // Automatically select the first available slot if the current selection is invalid for the new doctor
   useEffect(() => {
     if (timeSlots.length > 0) {
       const availableSlots = timeSlots.filter(s => !s.disabled);
@@ -182,7 +178,7 @@ const AppointmentBooking = () => {
   }, [selectedDoctorId, timeSlots, selectedTime]);
 
   const handleConfirmBooking = async () => {
-    // Check time restriction
+
     const match = selectedTime.match(/^(\d{2}):(\d{2})\s*(AM|PM)$/i);
     if (match) {
       let hour = parseInt(match[1], 10);
@@ -312,7 +308,7 @@ const AppointmentBooking = () => {
                 <div className="w-12 h-12 rounded-2xl bg-brand-50 flex items-center justify-center border border-brand-100 shrink-0">
                   <Calendar className="w-6 h-6 text-brand-700" />
                 </div>
-                
+
                 <div className="flex-1 space-y-1 text-center sm:text-left">
                   <span className="block text-[10px] uppercase font-bold text-slate-400">Ngày đã chọn</span>
                   <span className="block text-sm font-extrabold text-slate-800">
@@ -498,11 +494,10 @@ const AppointmentBooking = () => {
 
       </main>
 
-      {/* MODAL CHI TIẾT HỒ SƠ BÁC SĨ */}
       {showDocModal && modalDoctor && (
         <div className="fixed inset-0 bg-black/45 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
           <div className="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-brand-100/50 flex flex-col max-h-[90vh]">
-            {/* Header / Banner */}
+
             <div className="bg-gradient-to-r from-brand-700 to-brand-850 p-6 text-white relative shrink-0">
               <button
                 onClick={() => setShowDocModal(false)}
@@ -527,9 +522,8 @@ const AppointmentBooking = () => {
               </div>
             </div>
 
-            {/* Content Body */}
             <div className="p-6 overflow-y-auto space-y-5 text-xs md:text-sm">
-              {/* Giới thiệu */}
+
               <div className="space-y-1.5">
                 <h4 className="text-[10px] font-extrabold text-[#A8968F] uppercase tracking-wider">Giới thiệu bản thân</h4>
                 <p className="text-slate-600 leading-relaxed font-medium">
@@ -537,7 +531,6 @@ const AppointmentBooking = () => {
                 </p>
               </div>
 
-              {/* Học vấn */}
               <div className="space-y-1.5">
                 <h4 className="text-[10px] font-extrabold text-[#A8968F] uppercase tracking-wider">Kinh nghiệm & Học vấn</h4>
                 <p className="text-slate-600 leading-relaxed font-medium">
@@ -545,7 +538,6 @@ const AppointmentBooking = () => {
                 </p>
               </div>
 
-              {/* Liên hệ */}
               <div className="space-y-2.5 border-t border-[#f5eae6] pt-4 shrink-0">
                 <div className="flex items-center gap-3">
                   <Phone className="w-4 h-4 text-[#D3765F] shrink-0" />
@@ -558,7 +550,6 @@ const AppointmentBooking = () => {
               </div>
             </div>
 
-            {/* Footer */}
             <div className="p-5 border-t border-slate-100 bg-slate-50/50 flex justify-end shrink-0">
               <button
                 onClick={() => setShowDocModal(false)}

@@ -1,6 +1,5 @@
 const db = require('../config/db');
 
-// 1. Lấy danh sách lịch hẹn của bác sĩ
 const getDoctorAppointments = async (req, res) => {
   const { doctor_id } = req.params;
 
@@ -68,23 +67,22 @@ const getDoctorAppointments = async (req, res) => {
   }
 };
 
-// 2. Tạo lịch hẹn khám mới
 const formatDateTime = (dateTimeStr) => {
   try {
     const parts = dateTimeStr.trim().split(' ');
     if (parts.length < 3) return dateTimeStr;
-    
-    const datePart = parts[0]; // "YYYY-MM-DD"
-    const timePart = parts[1]; // "HH:MM"
-    const ampm = parts[2].toUpperCase(); // "AM" or "PM"
-    
+
+    const datePart = parts[0];
+    const timePart = parts[1];
+    const ampm = parts[2].toUpperCase();
+
     let [hours, minutes] = timePart.split(':').map(Number);
     if (ampm === 'PM' && hours < 12) hours += 12;
     if (ampm === 'AM' && hours === 12) hours = 0;
-    
+
     const formattedHours = String(hours).padStart(2, '0');
     const formattedMinutes = String(minutes).padStart(2, '0');
-    
+
     return `${datePart} ${formattedHours}:${formattedMinutes}:00`;
   } catch (err) {
     return dateTimeStr;
@@ -103,19 +101,17 @@ const createAppointment = async (req, res) => {
 
     const formattedTime = formatDateTime(appointment_time);
 
-    // Kiểm tra không cho phép đặt lịch khám trong quá khứ
     if (new Date(formattedTime) < new Date()) {
       return res.status(400).json({
         error: 'Thời gian đặt hẹn khám không hợp lệ (không được chọn thời điểm trong quá khứ).'
       });
     }
 
-    // Kiểm tra trùng lịch hẹn của Bác sĩ trong khoảng +/- 30 phút (status khác 'Cancelled')
     const conflictSql = `
-      SELECT appointment_id 
-      FROM Appointment 
-      WHERE doctor_id = ? 
-        AND status != 'Cancelled' 
+      SELECT appointment_id
+      FROM Appointment
+      WHERE doctor_id = ?
+        AND status != 'Cancelled'
         AND appointment_time >= DATE_SUB(?, INTERVAL 30 MINUTE)
         AND appointment_time <= DATE_ADD(?, INTERVAL 30 MINUTE)
     `;
@@ -162,7 +158,6 @@ const createAppointment = async (req, res) => {
   }
 };
 
-// 3. Lấy lịch sử bệnh án chi tiết của Bệnh nhân (AI Diagnosis vs Doctor Correction)
 const getPatientHistory = async (req, res) => {
   const { patient_id } = req.params;
 
@@ -208,7 +203,6 @@ const getPatientHistory = async (req, res) => {
   }
 };
 
-// 4. Lấy danh sách toàn bộ bệnh án đã khám xong cho admin
 const getAllAppointments = async (req, res) => {
   try {
     const sql = `
@@ -248,7 +242,6 @@ const getAllAppointments = async (req, res) => {
   }
 };
 
-// 5. Lấy danh sách giờ đã đặt của bác sĩ
 const getBookedSlots = async (req, res) => {
   const { doctor_id, date } = req.query;
 
@@ -282,7 +275,6 @@ const getBookedSlots = async (req, res) => {
 
 const { generateAISummary } = require('../utils/aiSummaryHelper');
 
-// 6. API Lấy AI Tóm tắt Bệnh sử (AI Patient Summary) cho Bác sĩ
 const getAppointmentAISummary = async (req, res) => {
   const appointmentId = req.params.id || req.params.appointment_id;
 
@@ -297,9 +289,8 @@ const getAppointmentAISummary = async (req, res) => {
     let patientId = null;
     let patientName = 'Bệnh nhân';
 
-    // 1. Truy vấn SQL: Từ appointment_id lấy patient_id
     const appointmentSql = `
-      SELECT 
+      SELECT
         app.appointment_id,
         app.patient_id,
         u.full_name AS patient_name,
@@ -314,10 +305,10 @@ const getAppointmentAISummary = async (req, res) => {
       patientId = appRows[0].patient_id;
       patientName = appRows[0].patient_name || 'Bệnh nhân';
     } else {
-      // Dự phòng: Kiểm tra xem ID có phải là patient_id trực tiếp không
+
       const userSql = `
-        SELECT user_id, full_name, email 
-        FROM Users 
+        SELECT user_id, full_name, email
+        FROM Users
         WHERE user_id = ? AND role = 'patient'
       `;
       const [userRows] = await db.execute(userSql, [appointmentId]);
@@ -332,12 +323,10 @@ const getAppointmentAISummary = async (req, res) => {
       }
     }
 
-    // 2. Truy vấn toàn bộ lịch sử khám của bệnh nhân trong bảng AI_Predictions với is_verified = 1
-    // (Chỉ lấy các cột: created_at, symptoms_text, doctor_corrected_disease)
     const historySql = `
-      SELECT 
-        created_at, 
-        symptoms_text, 
+      SELECT
+        created_at,
+        symptoms_text,
         doctor_corrected_disease
       FROM AI_Predictions
       WHERE patient_id = ? AND is_verified = 1
@@ -345,7 +334,6 @@ const getAppointmentAISummary = async (req, res) => {
     `;
     const [historyRows] = await db.execute(historySql, [patientId]);
 
-    // 3. Logic Tóm tắt (NLP/LLM): Tạo đoạn text 3-4 dòng tổng hợp bệnh lý mãn tính / triệu chứng thường gặp
     const summary = await generateAISummary(historyRows, patientName);
 
     return res.status(200).json({
@@ -375,5 +363,3 @@ module.exports = {
   getBookedSlots,
   getAppointmentAISummary
 };
-
-

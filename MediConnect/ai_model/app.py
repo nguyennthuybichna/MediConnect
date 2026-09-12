@@ -15,31 +15,30 @@ from deep_translator import GoogleTranslator
 from contextlib import asynccontextmanager
 from typing import List
 
-# Danh sách 24 bệnh chuẩn từ dataset Kaggle (Đã dịch sang tiếng Việt)
 DISEASE_CLASSES = [
-    "Mụn trứng cá (Acne)", 
-    "Dị ứng (Allergy)", 
-    "Viêm khớp (Arthritis)", 
-    "Hen phế quản (Bronchial Asthma)", 
-    "Thoái hóa đốt sống cổ (Cervical spondylosis)", 
-    "Thủy đậu (Chicken pox)", 
-    "Cảm lạnh chung (Common Cold)", 
-    "Sốt xuất huyết (Dengue)", 
-    "Tiểu đường (Diabetes)", 
-    "Bệnh trĩ (Dimorphic Hemorrhoids)", 
-    "Phản ứng thuốc (Drug reaction)", 
-    "Nhiễm trùng nấm (Fungal infection)", 
-    "Trào ngược dạ dày thực quản (GERD)", 
-    "Cao huyết áp (Hypertension)", 
-    "Chốc lở (Impetigo)", 
-    "Vàng da (Jaundice)", 
-    "Sốt rét (Malaria)", 
-    "Đau nửa đầu (Migraine)", 
-    "Viêm loét dạ dày (Peptic ulcer disease)", 
-    "Viêm phổi (Pneumonia)", 
-    "Vẩy nến (Psoriasis)", 
-    "Thương hàn (Typhoid)", 
-    "Nhiễm trùng đường tiết niệu (Urinary tract infection)", 
+    "Mụn trứng cá (Acne)",
+    "Dị ứng (Allergy)",
+    "Viêm khớp (Arthritis)",
+    "Hen phế quản (Bronchial Asthma)",
+    "Thoái hóa đốt sống cổ (Cervical spondylosis)",
+    "Thủy đậu (Chicken pox)",
+    "Cảm lạnh chung (Common Cold)",
+    "Sốt xuất huyết (Dengue)",
+    "Tiểu đường (Diabetes)",
+    "Bệnh trĩ (Dimorphic Hemorrhoids)",
+    "Phản ứng thuốc (Drug reaction)",
+    "Nhiễm trùng nấm (Fungal infection)",
+    "Trào ngược dạ dày thực quản (GERD)",
+    "Cao huyết áp (Hypertension)",
+    "Chốc lở (Impetigo)",
+    "Vàng da (Jaundice)",
+    "Sốt rét (Malaria)",
+    "Đau nửa đầu (Migraine)",
+    "Viêm loét dạ dày (Peptic ulcer disease)",
+    "Viêm phổi (Pneumonia)",
+    "Vẩy nến (Psoriasis)",
+    "Thương hàn (Typhoid)",
+    "Nhiễm trùng đường tiết niệu (Urinary tract infection)",
     "Viêm tĩnh mạch (Varicose Veins)"
 ]
 
@@ -47,20 +46,17 @@ tokenizer = None
 ort_session = None
 translator = GoogleTranslator(source='vi', target='en')
 
-# Quản lý vòng đời ứng dụng FastAPI
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global tokenizer, ort_session
     print("[INFO] Đang khởi tạo và nạp mô hình AI (ONNX)...")
-    
-    # 1. Tải Tokenizer từ HuggingFace
+
     try:
         tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
         print("[SUCCESS] Đã nạp thành công Tokenizer: bert-base-uncased")
     except Exception as e:
         raise RuntimeError(f"Lỗi khi tải Tokenizer: {str(e)}")
 
-    # 2. Nạp mô hình ONNX bằng ONNX Runtime
     onnx_model_path = os.path.join(os.path.dirname(__file__), "symptom2disease_model.onnx")
     if not os.path.exists(onnx_model_path):
          print(f"[ERROR] Không tìm thấy file {onnx_model_path}.")
@@ -87,7 +83,7 @@ class PredictionResponse(BaseModel):
     translated_text_used: str
 
 class ChatMessage(BaseModel):
-    role: str  # 'patient' hoặc 'ai'
+    role: str
     text: str
 
 class ChatRequest(BaseModel):
@@ -103,17 +99,17 @@ def is_meaningless_text(text: str) -> bool:
     trimmed = text.strip()
     if len(trimmed) < 2:
         return True
-    # Chỉ chứa số hoặc ký tự đặc biệt hoặc khoảng trắng
+
     if re.fullmatch(r'[\d\W_]+', trimmed):
         return True
-    # Lặp lại 1 ký tự duy nhất (vd: aaaaa, zzzz)
+
     if re.fullmatch(r'(.)\1{2,}', trimmed, re.IGNORECASE):
         return True
-    # Kiểm tra nguyên âm tiếng Việt và tiếng Anh
+
     has_vowels = bool(re.search(r'[aeiouyàáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹ]', trimmed, re.IGNORECASE))
     if not has_vowels and len(trimmed) >= 3:
         return True
-    # Chuỗi ngẫu nhiên bàn phím phổ biến
+
     gibberish_patterns = [
         r'^[asdfghjkl]+$',
         r'^[qwertyuiop]+$',
@@ -125,7 +121,7 @@ def is_meaningless_text(text: str) -> bool:
     return False
 
 def run_mediconnect_simulation(message: str, history: List[ChatMessage]):
-    # Kiểm tra tin nhắn vô nghĩa hoặc 1 chữ cái
+
     if is_meaningless_text(message):
         return {
             "reply": (
@@ -134,11 +130,9 @@ def run_mediconnect_simulation(message: str, history: List[ChatMessage]):
             )
         }
 
-    # Đếm số lượng tin nhắn của bệnh nhân
     patient_messages = [msg for msg in history if msg.role == 'patient']
-    user_turn = len(patient_messages) + 1  # Lượt hiện tại của user
+    user_turn = len(patient_messages) + 1
 
-    # Tập hợp tất cả tin nhắn của bệnh nhân để đoán bệnh ở lượt cuối
     all_symptoms = " ".join([msg.text for msg in patient_messages]) + " " + message
     all_symptoms_lower = all_symptoms.lower()
 
@@ -178,7 +172,7 @@ def run_mediconnect_simulation(message: str, history: List[ChatMessage]):
                 "Bạn có tiền sử bệnh lý gì đặc biệt hoặc đang sử dụng thuốc nào gần đây không?"
             )
         }
-# Từ điển triệu chứng chuyên khoa chi tiết cho 24 bệnh lý (hỗ trợ cả tiếng Việt và tiếng Anh)
+
 DISEASE_KNOWLEDGE_BASE = {
     "Mụn trứng cá (Acne)": {
         "keywords_vi": ["mụn", "mụn trứng cá", "mụn bọc", "mụn mủ", "mụn đầu đen", "bã nhờn", "nổi mụn ở mặt", "lỗ chân lông to", "mụn viêm"],
@@ -309,33 +303,30 @@ def diagnose_by_symptoms_kb(text_vi: str, text_en: str = "") -> tuple[str, float
     """
     cleaned_vi = (text_vi or "").lower()
     cleaned_en = (text_en or "").lower()
-    
+
     best_disease = "Cảm lạnh chung (Common Cold)"
     best_score = 0.0
     best_confidence = 0.85
-    
+
     for disease_name, info in DISEASE_KNOWLEDGE_BASE.items():
         score = 0
-        
-        # 1. Khớp từ khóa Tiếng Việt
+
         for kw in info["keywords_vi"]:
             if kw in cleaned_vi:
-                # Từ khóa dài hoặc chứa nhiều từ mang trọng số cao hơn
+
                 score += 3 if len(kw.split()) > 1 else 1.5
-                
-        # 2. Khớp từ khóa Tiếng Anh
+
         for kw in info["keywords_en"]:
             if kw in cleaned_en:
                 score += 3 if len(kw.split()) > 1 else 1.5
-                
+
         if score > best_score:
             best_score = score
             best_disease = disease_name
-            # Tính độ tin cậy dựa trên số lượng triệu chứng khớp được
+
             calculated_conf = min(0.98, info["base_confidence"] + min(0.04, (score - 1) * 0.015))
             best_confidence = round(calculated_conf, 4)
-            
-    # Nếu không khớp từ khóa chuyên biệt nào, trả về bệnh phù hợp nhất kèm độ tin cậy cơ sở
+
     if best_score == 0:
         if any(w in cleaned_vi for w in ["sốt", "nóng sốt", "ho", "mệt", "đau người"]):
             best_disease = "Cảm lạnh chung (Common Cold)"
@@ -350,7 +341,7 @@ def diagnose_by_symptoms_kb(text_vi: str, text_en: str = "") -> tuple[str, float
     return best_disease, best_confidence
 
 def run_mediconnect_simulation(message: str, history: List[ChatMessage]):
-    # Kiểm tra tin nhắn vô nghĩa hoặc 1 chữ cái
+
     if is_meaningless_text(message):
         return {
             "reply": (
@@ -359,11 +350,9 @@ def run_mediconnect_simulation(message: str, history: List[ChatMessage]):
             )
         }
 
-    # Đếm số lượng tin nhắn của bệnh nhân
     patient_messages = [msg for msg in history if msg.role == 'patient']
-    user_turn = len(patient_messages) + 1  # Lượt hiện tại của user
+    user_turn = len(patient_messages) + 1
 
-    # Tập hợp tất cả tin nhắn của bệnh nhân để phân tích tổng thể
     all_symptoms = " ".join([msg.text for msg in patient_messages]) + " " + message
 
     if user_turn == 1:
@@ -403,10 +392,10 @@ def run_mediconnect_simulation(message: str, history: List[ChatMessage]):
             )
         }
     else:
-        # Ở lượt thứ 5+, chẩn đoán bệnh bằng hệ cơ sở tri thức y khoa thông minh
+
         predicted_disease, confidence_float = diagnose_by_symptoms_kb(all_symptoms, all_symptoms)
         confidence_percent = int(confidence_float * 100)
-            
+
         return {
             "reply": (
                 f"Cảm ơn bạn đã cung cấp đầy đủ thông tin y tế.\n\n"
@@ -420,15 +409,14 @@ def run_mediconnect_simulation(message: str, history: List[ChatMessage]):
 @app.post("/chat")
 async def chat(request: ChatRequest):
     import requests
-    
+
     api_key = request.api_key
-    # Nếu không có key, hoặc key placeholder, hoặc không đúng định dạng key của Google (bắt đầu bằng AIzaSy)
+
     if not api_key or api_key == "your_gemini_api_key_here" or not api_key.startswith("AIzaSy"):
         return run_mediconnect_simulation(request.message, request.history)
-        
+
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
-    
-    # Định dạng lịch sử trò chuyện cho Gemini API
+
     gemini_contents = []
     for msg in request.history:
         role = "user" if msg.role == "patient" else "model"
@@ -436,13 +424,12 @@ async def chat(request: ChatRequest):
             "role": role,
             "parts": [{"text": msg.text}]
         })
-        
-    # Thêm câu hỏi/tin nhắn mới hiện tại
+
     gemini_contents.append({
         "role": "user",
         "parts": [{"text": request.message}]
     })
-    
+
     system_instruction = (
         "Bạn là trợ lý y khoa MediConnect, một trợ lý y khoa AI chuyên nghiệp. "
         "Nhiệm vụ của bạn là lắng nghe triệu chứng bệnh nhân, trò chuyện thân thiện và hỏi chi tiết một cách có hệ thống theo các bước sau:\n"
@@ -460,34 +447,34 @@ async def chat(request: ChatRequest):
             "parts": [{"text": system_instruction}]
         }
     }
-    
+
     try:
         response = requests.post(url, json=payload, timeout=12)
         response.raise_for_status()
         data = response.json()
-        
+
         reply_text = data['candidates'][0]['content']['parts'][0]['text']
         return {"reply": reply_text}
     except Exception as e:
         print(f"❌ Lỗi gọi Gemini API: {str(e)}")
-        # Dự phòng bằng bộ mô phỏng động nếu lỗi xảy ra khi gọi API
+
         return run_mediconnect_simulation(request.message, request.history)
 
 @app.post("/predict", response_model=PredictionResponse)
 async def predict(request: SymptomRequest):
     global tokenizer, ort_session, translator
-    
+
     if not request.text or not request.text.strip() or is_meaningless_text(request.text):
         raise HTTPException(
             status_code=400,
             detail="Tôi chưa hiểu mô tả triệu chứng của bạn. Vui lòng nhập rõ các triệu chứng bệnh bạn đang gặp phải (ví dụ: sốt, ho, đau đầu, mệt mỏi...)"
         )
-        
+
     if tokenizer is None:
         raise HTTPException(status_code=503, detail="Tokenizer chưa sẵn sàng.")
 
     try:
-        # Bước 1: Dịch Tiếng Việt -> Tiếng Anh
+
         try:
             translated_text = translator.translate(request.text)
             print(f"Input (VI): {request.text} -> Translated (EN): {translated_text}")
@@ -496,40 +483,35 @@ async def predict(request: SymptomRequest):
             translated_text = request.text
 
         if ort_session is not None:
-            # Bước 2: Mã hóa văn bản
+
             inputs = tokenizer(
                 translated_text,
-                max_length=128, 
+                max_length=128,
                 padding="max_length",
                 truncation=True,
-                return_tensors="np" 
+                return_tensors="np"
             )
-            
-            # Bước 3: Khai báo input cho ONNX
+
             ort_inputs = {
                 "input_ids": inputs["input_ids"].astype(np.int64),
                 "attention_mask": inputs["attention_mask"].astype(np.int64)
             }
-            
-            # Bước 4: Chạy suy luận (Inference)
+
             ort_outs = ort_session.run(None, ort_inputs)
             logits = ort_outs[0]
-            
-            # Bước 5: Tính Softmax bằng Numpy
+
             exp_logits = np.exp(logits - np.max(logits, axis=1, keepdims=True))
             probabilities = exp_logits / np.sum(exp_logits, axis=1, keepdims=True)
-            
-            # Bước 6: Lấy chỉ mục lớp có xác suất cao nhất
+
             class_idx = np.argmax(probabilities, axis=1)[0]
             confidence = float(probabilities[0, class_idx])
-            
-            # Bước 7: Ánh xạ kết quả an toàn
+
             if class_idx < 0 or class_idx >= len(DISEASE_CLASSES):
                 raise ValueError(f"Chỉ mục dự đoán {class_idx} nằm ngoài mảng nhãn.")
-                
+
             predicted_disease = DISEASE_CLASSES[class_idx]
         else:
-            # Chẩn đoán thông minh theo cơ sở tri thức y khoa 24 bệnh lý khi ONNX model offline
+
             predicted_disease, confidence = diagnose_by_symptoms_kb(request.text, translated_text)
 
         return PredictionResponse(

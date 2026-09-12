@@ -16,12 +16,10 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     );
   }
 
-  // Not logged in -> redirect to login
   if (!token) {
     return <Navigate to="/login" replace />;
   }
 
-  // Logged in but does not have the allowed role -> redirect to their correct dashboard
   if (allowedRoles && user && !allowedRoles.includes(user.role)) {
     if (user.role === 'admin') {
       return <Navigate to="/admin/dashboard" replace />;

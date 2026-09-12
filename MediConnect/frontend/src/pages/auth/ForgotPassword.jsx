@@ -11,10 +11,10 @@ const ForgotPassword = () => {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  
+
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  
+
   const [isLoading, setIsLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
@@ -22,18 +22,16 @@ const ForgotPassword = () => {
 
   const otpInputRefs = useRef([]);
 
-  // Kiểm tra nếu có mã token trong URL khi tải trang
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
     const token = queryParams.get('token');
     if (token) {
       setTokenFromUrl(token);
-      setIsOtpSent(true); // Nhảy thẳng sang màn hình thiết lập mật khẩu mới
+      setIsOtpSent(true);
       setSuccessMsg('Đường dẫn khôi phục mật khẩu hợp lệ. Hãy điền mật khẩu mới của bạn bên dưới.');
     }
   }, [location]);
 
-  // Gửi OTP khôi phục mật khẩu (Fallback cho trường hợp nhập tay)
   const handleSendOtp = async (e) => {
     e.preventDefault();
     if (!email.trim()) return;
@@ -55,10 +53,9 @@ const ForgotPassword = () => {
     }
   };
 
-  // Xử lý đổi OTP
   const handleOtpChange = (value, index) => {
     if (value && !/^\d$/.test(value)) return;
-    
+
     const newOtp = [...otp];
     newOtp[index] = value;
     setOtp(newOtp);
@@ -92,18 +89,16 @@ const ForgotPassword = () => {
     }
   };
 
-  // Xử lý gửi mật khẩu mới lên server
   const handleResetPassword = async (e) => {
     e.preventDefault();
-    
-    // Nếu có token từ URL thì dùng token đó, ngược lại ghép từ 6 ô OTP
+
     const token = tokenFromUrl || otp.join('');
-    
+
     if (!tokenFromUrl && token.length !== 6) {
       setErrorMsg('Vui lòng nhập đầy đủ mã xác thực gồm 6 chữ số.');
       return;
     }
-    
+
     if (newPassword !== confirmPassword) {
       setErrorMsg('Mật khẩu xác nhận không khớp.');
       return;
@@ -114,10 +109,10 @@ const ForgotPassword = () => {
     setSuccessMsg(null);
 
     try {
-      const res = await api.post('/auth/reset-password', { 
+      const res = await api.post('/auth/reset-password', {
         email,
-        token, 
-        new_password: newPassword 
+        token,
+        new_password: newPassword
       });
       if (res.data && res.data.success) {
         setSuccessMsg('Đặt lại mật khẩu thành công! Đang chuyển hướng về trang đăng nhập...');
@@ -132,7 +127,6 @@ const ForgotPassword = () => {
     }
   };
 
-  // Gửi lại mã OTP
   const handleResendOtp = async () => {
     setIsLoading(true);
     setErrorMsg(null);
@@ -152,7 +146,7 @@ const ForgotPassword = () => {
   return (
     <div className="min-h-screen bg-[#faf6f4] text-slate-800 font-sans flex flex-col justify-between py-12 px-4 sm:px-6 lg:px-8">
       <div className="flex-1 flex flex-col items-center justify-center">
-        {/* LOGO */}
+
         <div className="flex flex-col items-center gap-2 mb-6">
           <div className="w-12 h-12 rounded-2xl bg-brand-500 flex items-center justify-center shadow-lg text-white">
             <Activity className="w-7 h-7" />
@@ -160,7 +154,6 @@ const ForgotPassword = () => {
           <span className="text-3xl font-extrabold text-brand-800 tracking-tight">MediConnect</span>
         </div>
 
-        {/* CONTAINER */}
         <div className="bg-white rounded-3xl shadow-xl border border-brand-100 p-8 sm:p-10 max-w-md w-full relative">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 h-1 w-24 bg-gradient-to-r from-brand-400 to-brand-600 rounded-b-full"></div>
 
@@ -168,7 +161,7 @@ const ForgotPassword = () => {
             {isOtpSent ? 'Đặt lại mật khẩu' : 'Quên mật khẩu'}
           </h2>
           <p className="text-sm text-slate-500 text-center mb-8">
-            {isOtpSent 
+            {isOtpSent
               ? (tokenFromUrl ? 'Nhập mật khẩu mới của bạn bên dưới để thiết lập lại tài khoản.' : `Nhập mã OTP gửi tới email ${email} và điền mật khẩu mới của bạn.`)
               : 'Nhập địa chỉ email của bạn để nhận liên kết khôi phục mật khẩu.'}
           </p>
@@ -186,7 +179,7 @@ const ForgotPassword = () => {
           )}
 
           {!isOtpSent ? (
-            /* STAGE 1: Nhập Email */
+
             <form onSubmit={handleSendOtp} className="space-y-6">
               <div>
                 <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">
@@ -224,9 +217,9 @@ const ForgotPassword = () => {
               </div>
             </form>
           ) : (
-            /* STAGE 2: Nhập OTP (nếu không dùng link) và Mật khẩu mới */
+
             <form onSubmit={handleResetPassword} className="space-y-5">
-              {/* Chỉ hiển thị các ô nhập OTP nếu không có mã token trên URL */}
+
               {!tokenFromUrl && (
                 <div>
                   <label className="block text-xs font-semibold text-slate-500 mb-2.5 uppercase tracking-wider">
@@ -250,7 +243,6 @@ const ForgotPassword = () => {
                 </div>
               )}
 
-              {/* Mật khẩu mới */}
               <div>
                 <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">
                   Mật khẩu mới
@@ -275,7 +267,6 @@ const ForgotPassword = () => {
                 </div>
               </div>
 
-              {/* Xác nhận mật khẩu */}
               <div>
                 <label className="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">
                   Xác nhận Mật khẩu mới
@@ -310,7 +301,7 @@ const ForgotPassword = () => {
               </button>
 
               <div className="text-center pt-2 space-y-4">
-                {/* Chỉ hiển thị phần gửi lại OTP khi không dùng link từ URL */}
+
                 {!tokenFromUrl && (
                   <div className="text-xs text-slate-500 font-semibold">
                     Không nhận được mã?{' '}

@@ -12,7 +12,7 @@ const PatientHistory = () => {
       try {
         setLoading(true);
         const response = await api.get('/diagnosis/history');
-        
+
         if (Array.isArray(response.data)) {
           setHistory(response.data);
         } else if (response.data && Array.isArray(response.data.history)) {
@@ -82,7 +82,7 @@ const PatientHistory = () => {
 
   return (
     <div className="max-w-3xl mx-auto space-y-8">
-      {/* Timeline container */}
+
       <div className="relative border-l-2 border-slate-200 ml-4 md:ml-6 pl-8 space-y-8">
         {history.map((item) => {
           const confidence = parseFloat(item.ai_confidence);
@@ -90,10 +90,10 @@ const PatientHistory = () => {
 
           return (
             <div key={item.prediction_id} className="relative group">
-              {/* Timeline marker */}
+
               <span className={`absolute -left-[42px] top-1.5 w-6 h-6 rounded-full flex items-center justify-center bg-white border-2 shadow-sm transition-transform group-hover:scale-110 ${
-                item.is_verified === 1 
-                  ? 'border-emerald-500 text-emerald-500' 
+                item.is_verified === 1
+                  ? 'border-emerald-500 text-emerald-500'
                   : 'border-amber-400 text-amber-400'
               }`}>
                 {item.is_verified === 1 ? (
@@ -103,16 +103,14 @@ const PatientHistory = () => {
                 )}
               </span>
 
-              {/* Card content */}
               <div className="bg-white rounded-2xl p-5 md:p-6 border border-slate-200 shadow-sm hover:shadow-md transition-all duration-300">
-                {/* Header */}
+
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3 mb-4">
                   <span className="text-xs text-slate-500 font-semibold flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5 text-slate-400" />
                     {formatDate(item.created_at)}
                   </span>
 
-                  {/* Status Badge */}
                   {item.is_verified === 1 ? (
                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100 uppercase tracking-wide">
                       <CheckCircle className="w-3 h-3" />
@@ -126,9 +124,8 @@ const PatientHistory = () => {
                   )}
                 </div>
 
-                {/* Details */}
                 <div className="space-y-4">
-                  {/* Part 1: Symptoms */}
+
                   <div>
                     <h5 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Triệu chứng khai báo</h5>
                     <blockquote className="italic text-slate-600 text-xs md:text-sm pl-3 border-l-4 border-slate-350 py-1 mt-1.5 leading-relaxed">
@@ -136,9 +133,8 @@ const PatientHistory = () => {
                     </blockquote>
                   </div>
 
-                  {/* Part 2 & 3: Diagnoses */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
-                    {/* AI Prediction */}
+
                     <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-100">
                       <h5 className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">AI Dự đoán</h5>
                       <div className="flex items-center gap-2 mt-2">
@@ -149,10 +145,9 @@ const PatientHistory = () => {
                       </div>
                     </div>
 
-                    {/* Doctor Conclusion */}
                     <div className={`p-3.5 rounded-xl border ${
-                      item.is_verified === 1 
-                        ? 'bg-emerald-50 text-emerald-800 border-emerald-250' 
+                      item.is_verified === 1
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-250'
                         : 'bg-amber-50 border-amber-200 text-amber-800'
                     }`}>
                       <h5 className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Bác sĩ Kết luận</h5>

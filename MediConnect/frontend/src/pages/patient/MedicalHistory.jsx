@@ -26,7 +26,7 @@ const MedicalHistory = () => {
   const [filterQuery, setFilterQuery] = useState('');
   const [records, setRecords] = useState([]);
   const [aiPredictions, setAiPredictions] = useState([]);
-  const [activeTab, setActiveTab] = useState('clinical'); // 'clinical' or 'ai'
+  const [activeTab, setActiveTab] = useState('clinical');
   const [loading, setLoading] = useState(true);
 
   const [showDetailModal, setShowDetailModal] = useState(false);
@@ -107,11 +107,10 @@ const MedicalHistory = () => {
       try {
         setLoading(true);
         const patientId = user?.id || localStorage.getItem('user_id') || 1;
-        
-        // 1. Fetch appointments history
+
         const res = await api.get(`/appointments/patient/${patientId}`);
         const isDemo = String(patientId) === '1' || user?.email === 'elena.rossi@example.com';
-        
+
         if (res.data && res.data.records) {
           if (isDemo) {
             setRecords([...res.data.records, ...mockRecords]);
@@ -122,7 +121,6 @@ const MedicalHistory = () => {
           setRecords(isDemo ? mockRecords : []);
         }
 
-        // 2. Fetch AI Triage history
         try {
           const aiRes = await api.get('/diagnosis/history');
           if (aiRes.data) {
@@ -263,13 +261,13 @@ const MedicalHistory = () => {
             <div>
               <span className="block text-[10px] uppercase font-bold tracking-wider text-brand-100">Lịch khám kế tiếp</span>
               <h4 className="text-lg font-bold mt-0.5 font-sans">
-                {nextApp 
+                {nextApp
                   ? new Date(nextApp.appointment_time).toLocaleDateString('vi-VN', { day: 'numeric', month: 'long' })
                   : "Chưa có lịch"}
               </h4>
               <p className="text-xs text-brand-50 font-light mt-0.5">
-                {nextApp 
-                  ? (nextApp.type === 'Virtual Consultation' ? 'Tư vấn trực tuyến' : nextApp.type === 'Emergency Triage' ? 'Cấp cứu ban đầu' : 'Khám lâm sàng') 
+                {nextApp
+                  ? (nextApp.type === 'Virtual Consultation' ? 'Tư vấn trực tuyến' : nextApp.type === 'Emergency Triage' ? 'Cấp cứu ban đầu' : 'Khám lâm sàng')
                   : "Hãy đặt lịch hẹn mới"}
               </p>
             </div>
@@ -291,7 +289,6 @@ const MedicalHistory = () => {
             </div>
           </div>
 
-          {/* Tab selector */}
           <div className="flex border-b border-[#f5eae6] mb-6">
             <button
               onClick={() => setActiveTab('clinical')}
@@ -341,12 +338,12 @@ const MedicalHistory = () => {
                 </div>
               ) : (
                 filteredRecords.map((record) => {
-                  const dateObj = record.appointment_time 
-                    ? new Date(record.appointment_time) 
+                  const dateObj = record.appointment_time
+                    ? new Date(record.appointment_time)
                     : new Date();
                   const month = dateObj.toLocaleString('vi-VN', { month: 'short' }).toUpperCase();
                   const day = dateObj.getDate();
-                  
+
                   return (
                     <div
                       key={record.appointment_id || record.id}
@@ -430,12 +427,12 @@ const MedicalHistory = () => {
                 </div>
               ) : (
                 filteredAiPredictions.map((record) => {
-                  const dateObj = record.created_at 
-                    ? new Date(record.created_at) 
+                  const dateObj = record.created_at
+                    ? new Date(record.created_at)
                     : new Date();
                   const month = dateObj.toLocaleString('vi-VN', { month: 'short' }).toUpperCase();
                   const day = dateObj.getDate();
-                  
+
                   return (
                     <div
                       key={record.prediction_id || record.id}
@@ -546,12 +543,10 @@ const MedicalHistory = () => {
 
       </main>
 
-      {/* DIALOG CHI TIẾT CHẨN ĐOÁN */}
       {showDetailModal && selectedRecord && (
         <div className="fixed inset-0 bg-black/45 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
           <div className="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-brand-100/50 flex flex-col max-h-[90vh]">
-            
-            {/* Header */}
+
             <div className={`bg-gradient-to-r ${selectedRecord.isAiOnly ? 'from-[#d3765f] to-[#843f2e]' : 'from-brand-700 to-brand-850'} p-5 text-white relative shrink-0`}>
               <button
                 onClick={() => setShowDetailModal(false)}
@@ -578,11 +573,10 @@ const MedicalHistory = () => {
               </div>
             </div>
 
-            {/* Body */}
             <div className="p-6 overflow-y-auto space-y-5 text-xs md:text-sm">
               {selectedRecord.isAiOnly ? (
                 <>
-                  {/* Symptoms */}
+
                   <div className="space-y-1">
                     <h4 className="text-[10px] font-extrabold text-[#A8968F] uppercase tracking-wider">Triệu chứng khai báo</h4>
                     <p className="text-slate-800 font-medium italic bg-slate-50 p-3 rounded-xl border border-slate-100">
@@ -591,7 +585,7 @@ const MedicalHistory = () => {
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {/* AI predicted */}
+
                     <div className="space-y-1">
                       <h4 className="text-[10px] font-extrabold text-[#A8968F] uppercase tracking-wider">AI Dự kiến bệnh lý</h4>
                       <p className="text-slate-850 font-bold text-[#843f2e]">
@@ -599,7 +593,6 @@ const MedicalHistory = () => {
                       </p>
                     </div>
 
-                    {/* Verification Status */}
                     <div className="space-y-1">
                       <h4 className="text-[10px] font-extrabold text-[#A8968F] uppercase tracking-wider">Trạng thái xác thực</h4>
                       <p className={`font-bold ${selectedRecord.is_verified ? 'text-emerald-600' : 'text-amber-600'}`}>
@@ -617,7 +610,6 @@ const MedicalHistory = () => {
                     </div>
                   )}
 
-                  {/* Chat History if exists */}
                   {selectedRecord.chat_history && (() => {
                     try {
                       const chatArr = JSON.parse(selectedRecord.chat_history);
@@ -632,8 +624,8 @@ const MedicalHistory = () => {
                                   <div key={msgIdx} className={`flex flex-col ${isAi ? 'items-start' : 'items-end'}`}>
                                     <span className="text-[9px] text-slate-400 font-bold mb-0.5">{isAi ? 'MediMind AI' : 'Bệnh nhân'}</span>
                                     <div className={`p-2.5 rounded-2xl text-xs max-w-[85%] leading-relaxed ${
-                                      isAi 
-                                        ? 'bg-white text-slate-700 border border-slate-100 rounded-tl-none' 
+                                      isAi
+                                        ? 'bg-white text-slate-700 border border-slate-100 rounded-tl-none'
                                         : 'bg-brand-600 text-white rounded-tr-none'
                                     }`}>
                                       {msg.text}
@@ -653,7 +645,7 @@ const MedicalHistory = () => {
                 </>
               ) : (
                 <>
-                  {/* Bác sĩ */}
+
                   <div className="space-y-1">
                     <h4 className="text-[10px] font-extrabold text-[#A8968F] uppercase tracking-wider">Bác sĩ điều trị</h4>
                     <p className="text-slate-850 font-bold">
@@ -662,7 +654,7 @@ const MedicalHistory = () => {
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {/* AI ban đầu */}
+
                     <div className="space-y-1">
                       <h4 className="text-[10px] font-extrabold text-[#A8968F] uppercase tracking-wider">AI dự báo ban đầu</h4>
                       <p className="text-slate-650 font-semibold">
@@ -670,7 +662,6 @@ const MedicalHistory = () => {
                       </p>
                     </div>
 
-                    {/* Bác sĩ chốt */}
                     <div className="space-y-1">
                       <h4 className="text-[10px] font-extrabold text-[#A8968F] uppercase tracking-wider">Bác sĩ kết luận</h4>
                       <p className="text-[#843F2E] font-bold">
@@ -679,7 +670,6 @@ const MedicalHistory = () => {
                     </div>
                   </div>
 
-                  {/* Ghi chú */}
                   <div className="space-y-1.5 border-t border-[#f5eae6] pt-4">
                     <h4 className="text-[10px] font-extrabold text-[#A8968F] uppercase tracking-wider">Ghi chú lâm sàng & Dặn dò</h4>
                     <p className="text-slate-600 leading-relaxed font-medium">
@@ -687,7 +677,6 @@ const MedicalHistory = () => {
                     </p>
                   </div>
 
-                  {/* Kê đơn */}
                   <div className="space-y-1.5 border-t border-[#f5eae6] pt-4">
                     <h4 className="text-[10px] font-extrabold text-[#A8968F] uppercase tracking-wider">Đơn thuốc chỉ định</h4>
                     <div className="bg-[#FCF9F7] border border-[#EFE5E0] rounded-xl p-3.5 text-xs font-semibold text-slate-700 whitespace-pre-line leading-relaxed">
@@ -698,7 +687,6 @@ const MedicalHistory = () => {
               )}
             </div>
 
-            {/* Footer */}
             <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex justify-end shrink-0">
               <button
                 onClick={() => setShowDetailModal(false)}

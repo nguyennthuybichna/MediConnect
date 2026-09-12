@@ -2,19 +2,15 @@ const cron = require('node-cron');
 const db = require('../config/db');
 const { sendReminderEmail } = require('../utils/emailService');
 
-/**
- * Khởi tạo cron job nhắc nhở lịch khám tự động chạy mỗi giờ
- */
 const startReminderJob = () => {
-  // Cron expression: '0 * * * *' chạy vào phút thứ 0 của mỗi giờ
+
   cron.schedule('0 * * * *', async () => {
     console.log('⏰ [Cronjob] Đang kiểm tra danh sách lịch khám sắp diễn ra trong 24 giờ tới...');
-    
+
     try {
-      // Câu lệnh SQL thô lấy cuộc hẹn hợp lệ diễn ra trong 24 giờ tới
-      // Thực hiện JOIN 2 lần với bảng Users: alias 'p' cho Patient và 'd' cho Doctor
+
       const sql = `
-        SELECT 
+        SELECT
           a.appointment_id,
           a.appointment_time,
           a.status,
@@ -39,18 +35,16 @@ const startReminderJob = () => {
 
       console.log(`🔍 [Cronjob] Tìm thấy ${appointments.length} lịch khám cần gửi nhắc nhở.`);
 
-      // Sử dụng vòng lặp for...of để xử lý tuần tự (async/await hoạt động đúng mong đợi)
       for (const app of appointments) {
         try {
-          // Gọi hàm gửi email nhắc nhở được cấu hình sẵn HTML đẹp mắt
+
           await sendReminderEmail(
-            app.patient_email, 
-            app.patient_name, 
-            app.doctor_name, 
+            app.patient_email,
+            app.patient_name,
+            app.doctor_name,
             app.appointment_time
           );
 
-          // Cập nhật trạng thái đã gửi nhắc nhở để tránh trùng lặp
           await db.execute(
             'UPDATE Appointment SET is_reminded = 1 WHERE appointment_id = ?',
             [app.appointment_id]

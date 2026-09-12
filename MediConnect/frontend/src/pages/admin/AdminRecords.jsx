@@ -13,7 +13,6 @@ import {
   Menu
 } from 'lucide-react';
 
-// MOCK DATA MÔ PHỎNG SÁT VỚI THỰC TẾ
 const MOCK_RECORDS = [
   {
     id: "BA-23091",
@@ -86,9 +85,9 @@ export default function AdminRecords() {
             return {
               id: `BA-${app.appointment_id}`,
               patientName: app.patient_name || 'Bệnh nhân',
-              gender: "Nữ", // DB doesn't have it, fallback
-              age: 28, // DB doesn't have it, fallback
-              bloodType: "O+", // DB doesn't have it, fallback
+              gender: "Nữ",
+              age: 28,
+              bloodType: "O+",
               examDate: new Date(app.appointment_time).toLocaleDateString('vi-VN'),
               doctorName: app.doctor_name || 'Bác sĩ',
               initials: (app.patient_name || 'BN').split(' ').map(n=>n[0]).join('').slice(0, 2).toUpperCase(),
@@ -101,12 +100,12 @@ export default function AdminRecords() {
               }
             };
           });
-          
+
           setRecords(prev => {
             const filteredPrev = prev.filter(p => !mappedDbRecords.some(mp => mp.id === p.id));
             return [...mappedDbRecords, ...filteredPrev];
           });
-          
+
           if (mappedDbRecords.length > 0) {
             setSelectedId(mappedDbRecords[0].id);
           }
@@ -120,7 +119,7 @@ export default function AdminRecords() {
 
   const activeRecord = records.find(r => r.id === selectedId) || records[0];
 
-  const filteredRecords = records.filter(r => 
+  const filteredRecords = records.filter(r =>
     r.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
     r.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     r.doctorName.toLowerCase().includes(searchQuery.toLowerCase())
@@ -128,12 +127,11 @@ export default function AdminRecords() {
 
   return (
     <div className="flex bg-[#fdfbfb] min-h-screen text-slate-700 font-sans">
-      {/* 1. SIDEBAR (TRÁI - DÙNG CHUNG CỦA ADMIN) */}
+
       <Sidebar isMobileOpen={isMobileOpen} setIsMobileOpen={setIsMobileOpen} />
 
-      {/* 2. MAIN CONTENT (GIỮA) */}
       <main className="flex-1 p-6 md:p-8 overflow-y-auto max-w-7xl mx-auto space-y-6">
-        {/* Header */}
+
         <header className="flex justify-between items-center gap-4 border-b border-[#f5eae6] pb-4">
           <div className="flex items-center gap-3">
             <button
@@ -168,7 +166,6 @@ export default function AdminRecords() {
           </div>
         </header>
 
-        {/* Page Title */}
         <section className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight">Quản lý & Tổng hợp Bệnh án</h1>
@@ -176,7 +173,6 @@ export default function AdminRecords() {
           </div>
         </section>
 
-        {/* Table List Card */}
         <section className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs font-semibold">
@@ -228,17 +224,16 @@ export default function AdminRecords() {
         </section>
       </main>
 
-      {/* 3. SLIDE-OVER DETAIL PANEL (PHẢI) */}
       {panelOpen && (
         <>
-          {/* Backdrop mờ khi mở panel trên mobile/tablet */}
+
           <div
             onClick={() => setPanelOpen(false)}
             className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-40 xl:hidden transition-opacity"
           />
 
           <aside className="fixed inset-y-0 right-0 z-50 w-full sm:w-[450px] xl:static xl:z-auto bg-white border-l border-slate-100 flex flex-col justify-between shrink-0 shadow-2xl h-screen sticky top-0 animate-slideIn">
-          {/* Panel Header */}
+
           <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
             <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wide">Chi tiết Bệnh án: {activeRecord.id}</h3>
             <button
@@ -249,9 +244,8 @@ export default function AdminRecords() {
             </button>
           </div>
 
-          {/* Panel Content */}
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
-            {/* profile block */}
+
             <div className="flex items-center gap-4 bg-brand-50/30 p-4 border border-[#f5eae6]/65 rounded-2xl">
               <div className="w-14 h-14 bg-brand-100 text-brand-800 rounded-2xl flex items-center justify-center font-extrabold text-lg uppercase shadow-sm">
                 {activeRecord.initials}
@@ -275,11 +269,10 @@ export default function AdminRecords() {
               </div>
             </div>
 
-            {/* Diagnosis section */}
             <div className="space-y-3">
               <span className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Phân tích AI</span>
               <div className="w-full">
-                {/* AI proposes card */}
+
                 <div className="bg-brand-50/50 border border-brand-100/50 rounded-2xl p-4 space-y-2.5 relative overflow-hidden flex flex-col justify-between">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
@@ -297,7 +290,6 @@ export default function AdminRecords() {
               </div>
             </div>
 
-            {/* Doctor clinical details */}
             {(activeRecord.notes || activeRecord.prescription || activeRecord.doctorDiagnosis) && (
               <div className="space-y-3">
                 <span className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Kết luận lâm sàng</span>
@@ -338,11 +330,10 @@ export default function AdminRecords() {
             )}
           </div>
 
-          {/* Panel Footer Actions */}
           <div className="p-6 border-t border-slate-100 bg-[#fdfbfb] space-y-3">
             <button
               onClick={() => {
-                const csvContent = "data:text/csv;charset=utf-8,ID,Patient,AI Prediction\n" 
+                const csvContent = "data:text/csv;charset=utf-8,ID,Patient,AI Prediction\n"
                   + `${activeRecord.id},${activeRecord.patientName},${activeRecord.aiPrediction.disease}`;
                 const encodedUri = encodeURI(csvContent);
                 const link = document.createElement("a");

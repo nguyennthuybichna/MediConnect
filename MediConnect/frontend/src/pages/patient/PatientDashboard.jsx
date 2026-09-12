@@ -48,14 +48,14 @@ const PatientDashboard = () => {
       try {
         const patientId = user?.id || localStorage.getItem('user_id') || 1;
         const res = await api.get(`/appointments/patient/${patientId}`);
-        
+
         const isDemo = String(patientId) === '1' || user?.email === 'elena.rossi@example.com';
-        
+
         let allRecs = [];
         if (res.data && res.data.records) {
           allRecs = res.data.records;
         }
-        
+
         if (isDemo) {
           const mockHistoryRecords = [
             {
@@ -123,7 +123,6 @@ const PatientDashboard = () => {
     }
   }, [user]);
 
-  // Lấy danh sách bác sĩ từ API hoặc sử dụng mock data
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
@@ -204,16 +203,14 @@ const PatientDashboard = () => {
     }
   };
 
-  // Đặt lịch hẹn khám bệnh
   const handleBookAppointment = async (doctorId, doctorName) => {
-    if (bookingDoctorId) return; // Chống spam click
+    if (bookingDoctorId) return;
     setBookingDoctorId(doctorId);
 
     try {
       const patientId = user?.id || localStorage.getItem('user_id') || 1;
       const predictionId = diagnosisResult?.prediction_id || null;
 
-      // Hẹn ngày khám: 24h từ bây giờ
       const appDate = new Date();
       appDate.setHours(appDate.getHours() + 24);
       const appTimeString = appDate.toISOString().slice(0, 19).replace('T', ' ');
@@ -327,8 +324,8 @@ const PatientDashboard = () => {
                 <Heart className="w-4 h-4 text-red-500" />
               </div>
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase ${
-                hasConclusion 
-                  ? "bg-emerald-50 text-emerald-600 border-emerald-100" 
+                hasConclusion
+                  ? "bg-emerald-50 text-emerald-600 border-emerald-100"
                   : "bg-slate-50 text-slate-400 border-slate-100"
               }`}>
                 {hasConclusion ? "Khỏe mạnh" : "Chưa có"}
@@ -347,8 +344,8 @@ const PatientDashboard = () => {
                 <Moon className="w-4 h-4 text-brand-700" />
               </div>
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase ${
-                hasConclusion 
-                  ? "bg-amber-50 text-amber-600 border-amber-100" 
+                hasConclusion
+                  ? "bg-amber-50 text-amber-600 border-amber-100"
                   : "bg-slate-50 text-slate-400 border-slate-100"
               }`}>
                 {hasConclusion ? "Đang cải thiện" : "Chưa có"}
@@ -367,8 +364,8 @@ const PatientDashboard = () => {
                 <Droplet className="w-4 h-4 text-teal-600" />
               </div>
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase ${
-                hasConclusion 
-                  ? "bg-teal-50 text-teal-600 border-teal-100" 
+                hasConclusion
+                  ? "bg-teal-50 text-teal-600 border-teal-100"
                   : "bg-slate-50 text-slate-400 border-slate-100"
               }`}>
                 {hasConclusion ? "Đúng mục tiêu" : "Chưa có"}
@@ -387,8 +384,8 @@ const PatientDashboard = () => {
                 <Flame className="w-4 h-4 text-orange-500" />
               </div>
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase ${
-                hasConclusion 
-                  ? "bg-rose-50 text-rose-600 border-rose-100" 
+                hasConclusion
+                  ? "bg-rose-50 text-rose-600 border-rose-100"
                   : "bg-slate-50 text-slate-400 border-slate-100"
               }`}>
                 {hasConclusion ? "Thấp" : "Chưa có"}
@@ -412,7 +409,7 @@ const PatientDashboard = () => {
               <span className="text-xs uppercase font-extrabold tracking-wider text-brand-100">Phân tích sức khỏe hàng ngày từ AI</span>
             </div>
             <h2 className="text-2xl md:text-3xl font-bold leading-tight">
-              {hasConclusion 
+              {hasConclusion
                 ? "Quá trình trao đổi chất caffeine của bạn đạt đỉnh sớm hơn hôm nay."
                 : "Chưa có kết luận bệnh án từ bác sĩ chuyên khoa."
               }
@@ -508,7 +505,6 @@ const PatientDashboard = () => {
             </div>
           )}
 
-          {/* DOCTOR LISTING GRID */}
           <div className="mt-8 pt-6 border-t border-[#f5eae6]/65 space-y-4">
             <div className="flex flex-col gap-1">
               <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Danh sách Bác sĩ Chuyên khoa</h3>
@@ -577,7 +573,7 @@ const PatientDashboard = () => {
                   const dateObj = app.appointment_time ? new Date(app.appointment_time) : new Date();
                   const formattedDate = dateObj.toLocaleDateString('vi-VN', { day: 'numeric', month: 'long', year: 'numeric' });
                   const formattedTime = dateObj.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-                  
+
                   return (
                     <div key={app.appointment_id || app.id} className="bg-white rounded-3xl p-5 border border-slate-100 shadow-sm flex flex-col justify-between min-h-[170px] border-l-4 border-l-brand-600">
                       <div className="flex items-center gap-3">

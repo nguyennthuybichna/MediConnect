@@ -148,7 +148,7 @@ const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
 
   return (
     <>
-      {/* Backdrop mờ khi mở Sidebar trên Mobile */}
+
       {isMobileOpen && (
         <div
           onClick={() => setIsMobileOpen && setIsMobileOpen(false)}
@@ -171,7 +171,6 @@ const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
               <span className="text-xl font-bold text-brand-800 tracking-tight">MediConnect</span>
             </div>
 
-            {/* Nút đóng Sidebar chỉ hiện trên Mobile */}
             <button
               onClick={() => setIsMobileOpen && setIsMobileOpen(false)}
               className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg md:hidden transition-colors"

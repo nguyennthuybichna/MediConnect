@@ -38,7 +38,7 @@ export const AuthProvider = ({ children }) => {
       clearTimeout(toastTimerRef.current);
     }
     setToastMessage(message);
-    // Tự động tắt sau 3.5 giây
+
     toastTimerRef.current = setTimeout(() => {
       setToastMessage(null);
     }, 3500);

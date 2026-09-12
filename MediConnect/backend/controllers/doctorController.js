@@ -1,6 +1,5 @@
 const db = require('../config/db');
 
-// 1. Lấy danh sách bác sĩ
 const getDoctors = async (req, res) => {
   try {
     const [rows] = await db.execute(
@@ -18,7 +17,6 @@ const getDoctors = async (req, res) => {
   }
 };
 
-// 2. Lấy thông tin chi tiết một Appointment cụ thể (bao gồm Bệnh nhân, Dị ứng và Kết quả AI)
 const getAppointmentDetail = async (req, res) => {
   const { appointment_id } = req.params;
 
@@ -29,9 +27,9 @@ const getAppointmentDetail = async (req, res) => {
   }
 
   try {
-    // A. Lấy thông tin Appointment, Patient, và AI Prediction liên quan
+
     const appSql = `
-      SELECT 
+      SELECT
         app.appointment_id,
         app.appointment_time,
         app.status,
@@ -61,7 +59,6 @@ const getAppointmentDetail = async (req, res) => {
 
     const appData = appRows[0];
 
-    // B. Lấy danh sách dị ứng của bệnh nhân từ bảng độc lập Allergy
     const allergySql = `
       SELECT allergy_type, severity, notes
       FROM Allergy
@@ -102,7 +99,6 @@ const getAppointmentDetail = async (req, res) => {
   }
 };
 
-// 3. Bác sĩ lưu chẩn đoán lâm sàng ghi đè kết quả của AI (Human-in-the-loop)
 const submitDiagnosis = async (req, res) => {
   const { appointment_id } = req.params;
   const { notes, prescription, doctor_corrected_disease } = req.body;
@@ -114,7 +110,7 @@ const submitDiagnosis = async (req, res) => {
   }
 
   try {
-    // A. Kiểm tra sự tồn tại của Appointment và lấy prediction_id
+
     const [appRows] = await db.execute(
       "SELECT patient_id, prediction_id FROM Appointment WHERE appointment_id = ?",
       [appointment_id]
@@ -128,30 +124,26 @@ const submitDiagnosis = async (req, res) => {
 
     const { patient_id, prediction_id } = appRows[0];
 
-    // B. Cập nhật bảng Appointment (notes, prescription và đổi trạng thái sang Completed)
     await db.execute(
       "UPDATE Appointment SET notes = ?, prescription = ?, status = 'Completed' WHERE appointment_id = ?",
       [notes || null, prescription || null, appointment_id]
     );
 
-    // C. Ghi đè chẩn đoán AI và đổi is_verified = 1 (Human-in-the-loop)
     if (prediction_id) {
       await db.execute(
-        `UPDATE AI_Predictions 
-         SET doctor_corrected_disease = ?, is_verified = 1 
+        `UPDATE AI_Predictions
+         SET doctor_corrected_disease = ?, is_verified = 1
          WHERE prediction_id = ?`,
         [doctor_corrected_disease || null, prediction_id]
       );
     } else {
-      // Nếu lịch hẹn chưa gắn với chẩn đoán AI (ví dụ: đặt khám thường), 
-      // tạo mới bản ghi dự đoán đã được xác thực bởi bác sĩ
+
       const [newPred] = await db.execute(
         `INSERT INTO AI_Predictions (patient_id, symptoms_text, ai_disease, ai_confidence, doctor_corrected_disease, is_verified)
          VALUES (?, 'Chẩn đoán trực tiếp không qua triage', 'Bác sĩ chẩn đoán', 1.00, ?, 1)`,
         [patient_id, doctor_corrected_disease || 'Chưa rõ']
       );
-      
-      // Liên kết ngược lại vào Appointment
+
       await db.execute(
         "UPDATE Appointment SET prediction_id = ? WHERE appointment_id = ?",
         [newPred.insertId, appointment_id]
@@ -171,7 +163,6 @@ const submitDiagnosis = async (req, res) => {
   }
 };
 
-// 4. Lấy danh sách lịch khám của Bác sĩ hiện tại (dùng req.user.user_id từ token)
 const getDoctorAppointments = async (req, res) => {
   const doctor_id = req.user?.user_id;
 
@@ -184,7 +175,7 @@ const getDoctorAppointments = async (req, res) => {
 
   try {
     const sql = `
-      SELECT 
+      SELECT
         app.appointment_id,
         app.appointment_time,
         app.status,

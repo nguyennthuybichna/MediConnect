@@ -5,7 +5,7 @@ import api from '../../services/api';
 
 const VerifyEmail = () => {
   const location = useLocation();
-  const [status, setStatus] = useState('verifying'); // 'verifying' | 'success' | 'error'
+  const [status, setStatus] = useState('verifying');
   const [message, setMessage] = useState('');
 
   useEffect(() => {
@@ -40,7 +40,7 @@ const VerifyEmail = () => {
   return (
     <div className="min-h-screen bg-[#faf6f4] text-slate-800 font-sans flex flex-col justify-between py-12 px-4 sm:px-6 lg:px-8">
       <div className="flex-1 flex flex-col items-center justify-center">
-        {/* LOGO */}
+
         <div className="flex flex-col items-center gap-2 mb-6">
           <div className="w-12 h-12 rounded-2xl bg-brand-500 flex items-center justify-center shadow-lg text-white">
             <Activity className="w-7 h-7" />
@@ -48,7 +48,6 @@ const VerifyEmail = () => {
           <span className="text-3xl font-extrabold text-brand-800 tracking-tight">MediConnect</span>
         </div>
 
-        {/* CONTAINER */}
         <div className="bg-white rounded-3xl shadow-xl border border-brand-100 p-8 sm:p-10 max-w-md w-full relative text-center">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 h-1 w-24 bg-gradient-to-r from-brand-400 to-brand-600 rounded-b-full"></div>
 

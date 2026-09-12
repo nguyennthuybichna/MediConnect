@@ -16,7 +16,6 @@ import {
   Droplet
 } from 'lucide-react';
 
-// MOCK DATA MÔ PHỎNG SÁT VỚI THỰC TẾ TRONG HÌNH ẢNH THIẾT KẾ
 const MOCK_RECORDS = [
   {
     id: "BA-23091",
@@ -91,7 +90,7 @@ export default function DoctorDashboard() {
 
   const activeRecord = MOCK_RECORDS.find(r => r.id === selectedId) || MOCK_RECORDS[0];
 
-  const filteredRecords = MOCK_RECORDS.filter(r => 
+  const filteredRecords = MOCK_RECORDS.filter(r =>
     r.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
     r.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     r.doctorName.toLowerCase().includes(searchQuery.toLowerCase())
@@ -99,10 +98,10 @@ export default function DoctorDashboard() {
 
   return (
     <div className="flex bg-[#FAF6F3]/40 min-h-screen text-[#4A3E39] font-sans antialiased overflow-hidden">
-      {/* 1. SIDEBAR (TRÁI) */}
+
       <aside className="w-64 bg-[#FAF2EE] border-r border-[#EFE5E0] flex flex-col justify-between shrink-0">
         <div className="flex flex-col">
-          {/* Logo */}
+
           <div className="p-6 border-b border-[#EFE5E0] flex items-center gap-3.5">
             <div className="w-10 h-10 rounded-2xl bg-[#D3765F] flex items-center justify-center text-white shadow-md shadow-[#D3765F]/20">
               <Activity className="w-5.5 h-5.5" />
@@ -113,7 +112,6 @@ export default function DoctorDashboard() {
             </div>
           </div>
 
-          {/* Menu Links */}
           <nav className="p-4 space-y-1.5">
             <button className="w-full flex items-center gap-3.5 px-4 py-3 rounded-2xl text-xs font-bold text-[#6B5E59] hover:bg-[#F6EBE6]/50 hover:text-[#843F2E] transition-all">
               <LayoutDashboard className="w-5 h-5" />
@@ -139,7 +137,6 @@ export default function DoctorDashboard() {
           </nav>
         </div>
 
-        {/* User Card */}
         <div className="p-4 border-t border-[#EFE5E0] bg-[#FCF6F3]">
           <div className="flex items-center gap-3 p-2 rounded-2xl hover:bg-[#F7ECE8] transition-all cursor-pointer">
             <img
@@ -155,9 +152,8 @@ export default function DoctorDashboard() {
         </div>
       </aside>
 
-      {/* 2. MAIN CONTENT (GIỮA) */}
       <main className="flex-1 bg-white flex flex-col min-w-0 overflow-y-auto">
-        {/* Search Header */}
+
         <header className="px-8 py-5 border-b border-[#EFE5E0] flex items-center">
           <div className="relative w-full max-w-md">
             <input
@@ -171,13 +167,11 @@ export default function DoctorDashboard() {
           </div>
         </header>
 
-        {/* Page title banner */}
         <div className="px-8 py-6 space-y-1">
           <h2 className="text-2xl font-extrabold text-[#4A3E39] leading-tight">Quản lý & Tổng hợp Bệnh án</h2>
           <p className="text-xs font-semibold text-[#80726B]">Danh sách bệnh án đã hoàn tất khám chữa bệnh.</p>
         </div>
 
-        {/* Table Wrapper */}
         <div className="px-8 pb-8">
           <div className="border border-[#EFE5E0] rounded-2xl overflow-hidden shadow-2xs">
             <table className="w-full text-left border-collapse">
@@ -228,7 +222,6 @@ export default function DoctorDashboard() {
               </tbody>
             </table>
 
-            {/* Pagination / Total count */}
             <div className="bg-[#FAF6F3]/50 px-6 py-4 border-t border-[#EFE5E0] text-[11px] font-semibold text-[#A8968F]">
               Hiển thị 1 - {filteredRecords.length} của {MOCK_RECORDS.length} bệnh án
             </div>
@@ -236,10 +229,9 @@ export default function DoctorDashboard() {
         </div>
       </main>
 
-      {/* 3. SLIDE-OVER DETAIL PANEL (PHẢI) */}
       {panelOpen && (
         <aside className="w-[480px] bg-white border-l border-[#EFE5E0] flex flex-col justify-between shrink-0 shadow-2xl relative z-20 animate-slideIn">
-          {/* Panel Header */}
+
           <div className="px-6 py-5 border-b border-[#EFE5E0] flex items-center justify-between">
             <h3 className="text-sm font-extrabold text-[#4A3E39] uppercase tracking-wide">Chi tiết Bệnh án: {activeRecord.id}</h3>
             <button
@@ -250,9 +242,8 @@ export default function DoctorDashboard() {
             </button>
           </div>
 
-          {/* Panel Content (Scrollable) */}
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
-            {/* profile block */}
+
             <div className="flex items-center gap-4 bg-[#FCF6F3]/40 p-4 border border-[#EFE5E0] rounded-2xl">
               <div className="w-14 h-14 bg-[#FBEEE9] text-[#D3765F] rounded-2xl flex items-center justify-center font-extrabold text-lg uppercase shadow-2xs">
                 {activeRecord.initials}
@@ -276,7 +267,6 @@ export default function DoctorDashboard() {
               </div>
             </div>
 
-            {/* Allergy alert box */}
             {activeRecord.allergies && activeRecord.allergies.length > 0 ? (
               activeRecord.allergies.map((alg, idx) => (
                 <div key={idx} className="bg-[#FCECE8] border border-[#F5DDD7] rounded-2xl p-4.5 flex items-start gap-3.5 animate-fadeIn">
@@ -295,11 +285,10 @@ export default function DoctorDashboard() {
               </div>
             )}
 
-            {/* Diagnosis section */}
             <div className="space-y-3">
               <span className="block text-[10px] font-extrabold text-[#A8968F] uppercase tracking-wider">Chẩn đoán</span>
               <div className="grid grid-cols-2 gap-4">
-                {/* AI proposes card */}
+
                 <div className="bg-[#FAF1EC] border border-[#F2DDD3] rounded-2xl p-4 space-y-2.5 relative overflow-hidden flex flex-col justify-between">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-extrabold text-[#A8968F] uppercase tracking-wider">AI Đề xuất</span>
@@ -312,7 +301,6 @@ export default function DoctorDashboard() {
                   </p>
                 </div>
 
-                {/* Doctor conclusion card */}
                 <div className="bg-[#EBF7F2] border border-[#CDEFE0] rounded-2xl p-4 space-y-2.5 relative overflow-hidden flex flex-col justify-between">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-extrabold text-[#2A7E5C] uppercase tracking-wider">Bác sĩ kết luận</span>
@@ -325,7 +313,6 @@ export default function DoctorDashboard() {
               </div>
             </div>
 
-            {/* Prescribed medication table */}
             <div className="space-y-3">
               <span className="block text-[10px] font-extrabold text-[#A8968F] uppercase tracking-wider">Đơn thuốc chỉ định</span>
               <div className="border border-[#EFE5E0] rounded-2xl overflow-hidden shadow-3xs bg-white">
@@ -353,7 +340,6 @@ export default function DoctorDashboard() {
             </div>
           </div>
 
-          {/* Panel Footer Actions */}
           <div className="p-6 border-t border-[#EFE5E0] bg-[#FCF6F3]/30 space-y-3">
             <button
               onClick={() => window.print()}
@@ -362,11 +348,11 @@ export default function DoctorDashboard() {
               <Printer className="w-4 h-4" />
               <span>In Bệnh Án</span>
             </button>
-            
+
             <button
               onClick={() => {
-                // Giả lập xuất CSV
-                const csvContent = "data:text/csv;charset=utf-8,ID,Patient,AI Prediction,Doctor Diagnosis\n" 
+
+                const csvContent = "data:text/csv;charset=utf-8,ID,Patient,AI Prediction,Doctor Diagnosis\n"
                   + `${activeRecord.id},${activeRecord.patientName},${activeRecord.aiPrediction.disease},${activeRecord.doctorConclusion}`;
                 const encodedUri = encodeURI(csvContent);
                 const link = document.createElement("a");

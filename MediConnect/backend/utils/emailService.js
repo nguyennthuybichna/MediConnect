@@ -1,12 +1,6 @@
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
-/**
- * Cấu hình SMTP transporter sử dụng dịch vụ Gmail.
- * Các thông tin xác thực được lấy từ các biến môi trường:
- * - EMAIL_USER: Địa chỉ email Gmail gửi đi (ví dụ: hotro.mediconnect@gmail.com)
- * - EMAIL_PASS: Mật khẩu ứng dụng Gmail (App Password) sinh ra từ tài khoản Google
- */
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -15,14 +9,6 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-/**
- * Hàm gửi email dùng chung cho toàn hệ thống
- * 
- * @param {string} to - Email người nhận
- * @param {string} subject - Tiêu đề của thư
- * @param {string} htmlContent - Nội dung email định dạng HTML
- * @returns {Promise<object>} Thông tin phản hồi từ SMTP Server sau khi gửi thư thành công
- */
 const sendEmail = async (to, subject, htmlContent) => {
   try {
     const mailOptions = {
@@ -42,18 +28,8 @@ const sendEmail = async (to, subject, htmlContent) => {
   }
 };
 
-/**
- * Hàm gửi email nhắc lịch khám chuyên biệt cho Bệnh nhân
- * Thiết kế giao diện HTML cao cấp, rõ ràng.
- * 
- * @param {string} toEmail - Địa chỉ email bệnh nhân
- * @param {string} patientName - Họ tên bệnh nhân
- * @param {string} doctorName - Họ tên bác sĩ khám phụ trách
- * @param {string|Date} appointmentTime - Thời gian khám bệnh
- * @returns {Promise<object>} Thông tin phản hồi từ SMTP Server
- */
 const sendReminderEmail = async (toEmail, patientName, doctorName, appointmentTime) => {
-  // Định dạng thời gian hiển thị thân thiện với Tiếng Việt
+
   const timeString = new Date(appointmentTime).toLocaleString('vi-VN', {
     timeZone: 'Asia/Ho_Chi_Minh',
     hour: '2-digit',
@@ -68,7 +44,7 @@ const sendReminderEmail = async (toEmail, patientName, doctorName, appointmentTi
   const htmlContent = `
     <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f6f8fb; padding: 40px 20px; text-align: center; color: #333;">
       <div style="max-width: 550px; margin: 0 auto; background: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: left; border: 1px solid #edf2f7;">
-        
+
         <!-- Header Banner -->
         <div style="background: linear-gradient(135deg, #843f2e 0%, #b2533e 100%); padding: 35px 30px; text-align: center; color: #ffffff;">
           <div style="font-size: 24px; font-weight: 800; letter-spacing: 1px; margin-bottom: 5px;">MediConnect</div>
@@ -104,7 +80,7 @@ const sendReminderEmail = async (toEmail, patientName, doctorName, appointmentTi
           </div>
 
           <p style="font-size: 14px; line-height: 1.6; color: #4b5563; margin-bottom: 0;">
-            Quý khách vui lòng có mặt tại cơ sở y tế trước giờ hẹn <strong>15 phút</strong> để làm thủ tục chuẩn bị. 
+            Quý khách vui lòng có mặt tại cơ sở y tế trước giờ hẹn <strong>15 phút</strong> để làm thủ tục chuẩn bị.
             Nếu cần hủy hẹn hoặc đổi giờ khám, quý khách vui lòng đăng nhập ứng dụng MediConnect hoặc liên hệ Hotline để được hỗ trợ kịp thời.
           </p>
         </div>

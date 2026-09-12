@@ -66,10 +66,9 @@ const Login = () => {
 
   return (
     <div className="min-h-screen bg-[#faf6f4] text-slate-800 font-sans relative flex flex-col justify-between">
-      
+
       <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
 
-        {/* LOGO */}
         <div className="flex flex-col items-center gap-2 mb-6">
           <div className="w-12 h-12 rounded-2xl bg-brand-500 flex items-center justify-center shadow-lg text-white">
             <Activity className="w-7 h-7" />
@@ -77,7 +76,6 @@ const Login = () => {
           <span className="text-3xl font-extrabold text-brand-800 tracking-tight">MediConnect</span>
         </div>
 
-        {/* LOGIN CARD */}
         <div className="bg-white rounded-3xl shadow-xl border border-brand-100 p-8 sm:p-10 max-w-md w-full relative">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 h-1 w-24 bg-gradient-to-r from-brand-400 to-brand-600 rounded-b-full"></div>
 
@@ -135,8 +133,6 @@ const Login = () => {
               </div>
             </div>
 
-
-
             <button
               type="submit"
               disabled={isLoading}
@@ -179,7 +175,6 @@ const Login = () => {
           </p>
         </div>
 
-        {/* NOTIFICATION BADGE */}
         <div className="mt-8 bg-white border border-brand-100 rounded-full px-5 py-2.5 shadow-md flex items-center gap-3 max-w-sm w-full mx-auto animate-bounce">
           <span className="flex h-2.5 w-2.5 relative">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>

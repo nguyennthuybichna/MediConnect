@@ -31,7 +31,7 @@ const AdminDashboard = () => {
     const header = "Patient ID,Detected Condition,AI Confidence,Status\n";
     const rows = logs.map(e => `"${e.id}","${e.condition}",${e.confidence},"${e.status}"`).join("\n");
     const csvContent = "data:text/csv;charset=utf-8," + encodeURIComponent(header + rows);
-    
+
     const link = document.createElement("a");
     link.setAttribute("href", csvContent);
     link.setAttribute("download", `mediconnect_ai_training_data_${Date.now()}.csv`);

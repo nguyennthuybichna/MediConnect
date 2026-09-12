@@ -101,7 +101,7 @@ async function init() {
     if (users[0].cnt === 0) {
       console.log('🌱 Đang gieo dữ liệu mẫu...');
 
-      const hash = '$2a$10$eHSnmvppvOYq9bxPDBefCO8Y2ssdLRjoAWRmojZ2i4CWn7kHqF97G'; // password123
+      const hash = '$2a$10$eHSnmvppvOYq9bxPDBefCO8Y2ssdLRjoAWRmojZ2i4CWn7kHqF97G';
 
       await connection.query(`
         INSERT INTO \`Users\` (\`user_id\`, \`email\`, \`password_hash\`, \`full_name\`, \`role\`, \`specialty\`, \`is_email_verified\`) VALUES
