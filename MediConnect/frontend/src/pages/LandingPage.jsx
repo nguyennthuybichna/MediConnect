@@ -125,16 +125,9 @@ const SUGGESTIONS = [
 const LandingPage = () => {
   const navigate = useNavigate();
 
-  const [symptomText, setSymptomText] = useState(
-    'Bị ho khan liên tục 4 ngày nay, sốt nhẹ 37.8 độ C, có cảm giác tức ngực nhẹ và đau họng khi nuốt thức ăn.'
-  );
+  const [symptomText, setSymptomText] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [predictionResult, setPredictionResult] = useState({
-    disease: 'Viêm phế quản cấp (Acute Bronchitis)',
-    icd: 'ICD-10: J20.9',
-    confidence: 88.4,
-    clinicalNote: 'Dự đoán dựa trên triệu chứng sốt nhẹ, ho khan kéo dài và đau ngực. Cần loại trừ viêm phổi thùy và COVID-19 qua ống nghe phổi và xét nghiệm máu nếu sốt cao liên tục.'
-  });
+  const [predictionResult, setPredictionResult] = useState(null);
 
   const handleAnalyze = async () => {
     if (!symptomText.trim()) return;
