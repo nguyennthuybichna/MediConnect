@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { robotoRegularBase64 } from '../utils/vietnameseFont';
 import api from '../services/api';
 
@@ -142,20 +142,21 @@ const PublicPrescription = () => {
       });
 
       if (robotoRegularBase64) {
-        doc.addFileToVFS('Roboto-Regular.ttf', robotoRegularBase64);
-        doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
-        doc.addFont('Roboto-Regular.ttf', 'Roboto', 'bold');
-        doc.setFont('Roboto', 'normal');
+        try {
+          doc.addFileToVFS('Roboto-Regular.ttf', robotoRegularBase64);
+          doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
+          doc.setFont('Roboto', 'normal');
+        } catch (fontErr) {
+          console.warn('Lỗi load font tiếng Việt:', fontErr);
+        }
       }
 
       // Header phòng khám
-      doc.setFont('Roboto', 'bold');
-      doc.setFontSize(22);
+      doc.setFontSize(20);
       doc.setTextColor(132, 63, 46);
       doc.text('MEDICONNECT CLINIC', 20, 20);
 
       doc.setFontSize(9);
-      doc.setFont('Roboto', 'normal');
       doc.setTextColor(120, 120, 120);
       doc.text('123 Đường Bà Triệu, Hà Nội | Hotline: 1900-1234 | Web: mediconnect.com', 20, 26);
 
@@ -163,28 +164,23 @@ const PublicPrescription = () => {
       doc.line(20, 30, 190, 30);
 
       // Tiêu đề
-      doc.setFont('Roboto', 'bold');
-      doc.setFontSize(16);
+      doc.setFontSize(15);
       doc.setTextColor(30, 30, 30);
-      doc.text('TOA THUỐC Y KHOA ĐIỆN TỬ', 105, 42, { align: 'center' });
-      doc.setFontSize(10);
-      doc.setTextColor(100, 100, 100);
-      doc.text('(PRESCRIPTION)', 105, 47, { align: 'center' });
+      doc.text('TOA THUỐC Y KHOA ĐIỆN TỬ (PRESCRIPTION)', 105, 42, { align: 'center' });
 
       // Thông tin bệnh nhân & bác sĩ
       doc.setFontSize(10);
-      doc.setFont('Roboto', 'normal');
       doc.setTextColor(60, 60, 60);
-      doc.text(`Bệnh nhân (Patient): ${prescription.patient_name || 'N/A'}`, 20, 56);
-      doc.text(`Mã tra cứu: #${prescription.appointment_id || 'N/A'}`, 20, 62);
-      doc.text(`Chẩn đoán: ${prescription.diagnosis || 'Chưa cập nhật'}`, 20, 68);
+      doc.text(`Bệnh nhân (Patient): ${prescription.patient_name || 'N/A'}`, 20, 54);
+      doc.text(`Mã tra cứu: #${prescription.appointment_id || 'N/A'}`, 20, 60);
+      doc.text(`Chẩn đoán: ${prescription.diagnosis || 'Chưa cập nhật'}`, 20, 66);
 
       const formattedDate = prescription.appointment_time
         ? new Date(prescription.appointment_time).toLocaleDateString('vi-VN')
         : new Date().toLocaleDateString('vi-VN');
 
-      doc.text(`Ngày khám: ${formattedDate}`, 135, 56);
-      doc.text(`Bác sĩ: ${prescription.doctor_name || 'Bác sĩ điều trị'}`, 135, 62);
+      doc.text(`Ngày khám: ${formattedDate}`, 135, 54);
+      doc.text(`Bác sĩ: ${prescription.doctor_name || 'Bác sĩ điều trị'}`, 135, 60);
 
       // Bảng thuốc
       const rawMedicines = prescription.medicines || [];
@@ -200,8 +196,8 @@ const PublicPrescription = () => {
         instructions: m.instructions || m.usage || ''
       }));
 
-      doc.autoTable({
-        startY: 75,
+      autoTable(doc, {
+        startY: 74,
         columns: columns,
         body: rows,
         theme: 'grid',
@@ -212,7 +208,6 @@ const PublicPrescription = () => {
         headStyles: {
           fillColor: [132, 63, 46],
           textColor: [255, 255, 255],
-          fontStyle: 'bold',
           fontSize: 9
         },
         bodyStyles: {
@@ -222,15 +217,13 @@ const PublicPrescription = () => {
         margin: { left: 20, right: 20 }
       });
 
-      const finalY = doc.lastAutoTable.finalY + 12;
+      const finalY = (doc.lastAutoTable ? doc.lastAutoTable.finalY : 74) + 12;
 
       // Lời dặn
       if (prescription.notes) {
-        doc.setFont('Roboto', 'bold');
         doc.setFontSize(9);
         doc.setTextColor(80, 80, 80);
         doc.text('Lời dặn của bác sĩ:', 20, finalY);
-        doc.setFont('Roboto', 'normal');
         doc.setTextColor(100, 100, 100);
         const splitNotes = doc.splitTextToSize(prescription.notes, 110);
         doc.text(splitNotes, 20, finalY + 6);

@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { robotoRegularBase64 } from '../utils/vietnameseFont';
 import AISummaryCard from '../components/AISummaryCard';
 
@@ -126,10 +126,13 @@ const PrescriptionPrototype = () => {
       });
 
       if (robotoRegularBase64) {
-        doc.addFileToVFS('Roboto-Regular.ttf', robotoRegularBase64);
-        doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
-        doc.addFont('Roboto-Regular.ttf', 'Roboto', 'bold');
-        doc.setFont('Roboto', 'normal');
+        try {
+          doc.addFileToVFS('Roboto-Regular.ttf', robotoRegularBase64);
+          doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
+          doc.setFont('Roboto', 'normal');
+        } catch (fontErr) {
+          console.warn('Lỗi load font tiếng Việt:', fontErr);
+        }
       }
 
       doc.setFontSize(20);
@@ -167,7 +170,7 @@ const PrescriptionPrototype = () => {
         instructions: m.instructions
       }));
 
-      doc.autoTable({
+      autoTable(doc, {
         startY: 72,
         columns: columns,
         body: rows,
@@ -175,7 +178,6 @@ const PrescriptionPrototype = () => {
         headStyles: {
           fillColor: [217, 114, 81],
           textColor: [255, 255, 255],
-          fontStyle: 'bold',
           fontSize: 9
         },
         bodyStyles: {
@@ -185,7 +187,7 @@ const PrescriptionPrototype = () => {
         margin: { left: 20, right: 20 }
       });
 
-      const finalY = doc.lastAutoTable.finalY + 12;
+      const finalY = (doc.lastAutoTable ? doc.lastAutoTable.finalY : 72) + 12;
 
       doc.setFontSize(9);
       doc.setTextColor(90, 80, 75);

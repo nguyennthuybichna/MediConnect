@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { FileText } from 'lucide-react';
 import { robotoRegularBase64 } from '../utils/vietnameseFont';
 
@@ -25,44 +25,42 @@ const PrescriptionExport = ({ prescriptionData, appointment_id }) => {
 
   const generatePDF = (action = 'download') => {
     try {
-
       const doc = new jsPDF({
         orientation: 'p',
         unit: 'mm',
         format: 'a4'
       });
 
-      doc.addFileToVFS('Roboto-Regular.ttf', robotoRegularBase64);
-      doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
-      doc.addFont('Roboto-Regular.ttf', 'Roboto', 'bold');
-      doc.setFont('Roboto', 'normal');
+      if (robotoRegularBase64) {
+        try {
+          doc.addFileToVFS('Roboto-Regular.ttf', robotoRegularBase64);
+          doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
+          doc.setFont('Roboto', 'normal');
+        } catch (fontErr) {
+          console.warn('Lỗi load font tiếng Việt, sử dụng font mặc định:', fontErr);
+        }
+      }
 
-      doc.setFont('Roboto', 'bold');
-      doc.setFontSize(22);
+      doc.setFontSize(20);
       doc.setTextColor(132, 63, 46);
       doc.text('MEDICONNECT CLINIC', 20, 20);
 
       doc.setFontSize(9);
-      doc.setFont('Roboto', 'normal');
       doc.setTextColor(120, 120, 120);
       doc.text('123 Đường Bà Triệu, Hà Nội | Hotline: 1900-1234 | Web: mediconnect.com', 20, 26);
 
       doc.setDrawColor(220, 220, 220);
       doc.line(20, 30, 190, 30);
 
-      doc.setFont('Roboto', 'bold');
-      doc.setFontSize(16);
+      doc.setFontSize(15);
       doc.setTextColor(30, 30, 30);
-      doc.text('TOA THUỐC Y KHOA', 105, 42, { align: 'center' });
-      doc.setFontSize(10);
-      doc.text('(PRESCRIPTION)', 105, 47, { align: 'center' });
+      doc.text('TOA THUỐC Y KHOA (PRESCRIPTION)', 105, 42, { align: 'center' });
 
       doc.setFontSize(10);
-      doc.setFont('Roboto', 'normal');
       doc.setTextColor(60, 60, 60);
-      doc.text(`Bệnh nhân (Patient): ${data.patientName}`, 20, 56);
-      doc.text(`Chẩn đoán (Diagnosis): ${data.diagnosis}`, 20, 62);
-      doc.text(`Ngày kê (Date): ${new Date().toLocaleDateString('vi-VN')}`, 140, 56);
+      doc.text(`Bệnh nhân (Patient): ${data.patientName}`, 20, 54);
+      doc.text(`Chẩn đoán (Diagnosis): ${data.diagnosis}`, 20, 60);
+      doc.text(`Ngày kê (Date): ${new Date().toLocaleDateString('vi-VN')}`, 140, 54);
 
       const rawMedicines = data.medicines || data.medications || [];
 
@@ -78,8 +76,8 @@ const PrescriptionExport = ({ prescriptionData, appointment_id }) => {
         usage: m.instructions || m.usage || ''
       }));
 
-      doc.autoTable({
-        startY: 70,
+      autoTable(doc, {
+        startY: 68,
         columns: columns,
         body: rows,
         theme: 'grid',
@@ -90,7 +88,6 @@ const PrescriptionExport = ({ prescriptionData, appointment_id }) => {
         headStyles: {
           fillColor: [132, 63, 46],
           textColor: [255, 255, 255],
-          fontStyle: 'bold',
           fontSize: 9
         },
         bodyStyles: {
@@ -100,22 +97,19 @@ const PrescriptionExport = ({ prescriptionData, appointment_id }) => {
         margin: { left: 20, right: 20 }
       });
 
-      const finalY = doc.lastAutoTable.finalY + 15;
+      const finalY = (doc.lastAutoTable ? doc.lastAutoTable.finalY : 70) + 15;
 
-      doc.setFont('Roboto', 'bold');
       doc.setFontSize(10);
       doc.setTextColor(30, 30, 30);
       doc.text('Bác sĩ điều trị (Doctor)', 20, finalY);
 
-      doc.setFont('Roboto', 'normal');
       doc.setFontSize(8);
       doc.setTextColor(120, 120, 120);
       doc.text('(Ký và ghi rõ họ tên / Signed & Stamped)', 20, finalY + 5);
 
-      doc.setFont('Roboto', 'bold');
       doc.setFontSize(10);
       doc.setTextColor(132, 63, 46);
-      doc.text(data.doctorSignature, 20, finalY + 25);
+      doc.text(data.doctorSignature, 20, finalY + 22);
 
       const qrCanvas = document.getElementById('prescription-qr-canvas') ||
                        (qrContainerRef.current ? qrContainerRef.current.querySelector('canvas') : null);
@@ -123,18 +117,13 @@ const PrescriptionExport = ({ prescriptionData, appointment_id }) => {
       if (qrCanvas) {
         try {
           const qrDataUrl = qrCanvas.toDataURL('image/png');
-
-          doc.addImage(qrDataUrl, 'PNG', 160, finalY - 5, 30, 30);
-
-          doc.setFont('Roboto', 'normal');
+          doc.addImage(qrDataUrl, 'PNG', 150, finalY - 5, 28, 28);
           doc.setFontSize(7);
           doc.setTextColor(150, 150, 150);
-          doc.text('Quét QR tra cứu đơn thuốc', 160, finalY + 28, { align: 'left' });
+          doc.text('Quét QR tra cứu đơn thuốc', 150, finalY + 27, { align: 'left' });
         } catch (qrError) {
           console.error('Lỗi khi trích xuất hoặc nhúng mã QR vào PDF:', qrError.message);
         }
-      } else {
-        console.warn('Không tìm thấy canvas mã QR để nhúng vào đơn thuốc PDF.');
       }
 
       const patientNameSafe = (data.patientName || 'BenhNhan').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').replace(/\s+/g, '_');
@@ -154,7 +143,7 @@ const PrescriptionExport = ({ prescriptionData, appointment_id }) => {
       }
     } catch (pdfError) {
       console.error('Lỗi nghiêm trọng khi tạo PDF đơn thuốc:', pdfError);
-      alert('Đã xảy ra sự cố trong quá trình xuất đơn thuốc PDF. Vui lòng liên hệ quản trị viên.');
+      alert('Đã xảy ra sự cố trong quá trình xuất đơn thuốc PDF. Vui lòng thử lại.');
     }
   };
 
