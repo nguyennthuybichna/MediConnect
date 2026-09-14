@@ -330,6 +330,13 @@ const PublicPrescription = () => {
         </div>
       </header>
 
+      {loading ? (
+        <div className="max-w-md mx-auto px-4 mt-16 text-center space-y-4">
+          <div className="w-12 h-12 border-4 border-rose-200 border-t-[#843F2E] rounded-full animate-spin mx-auto"></div>
+          <p className="text-xs font-bold text-slate-600">Đang tải dữ liệu toa thuốc từ máy chủ y tế...</p>
+          <p className="text-[11px] text-slate-400">Vui lòng chờ trong giây lát</p>
+        </div>
+      ) : (
       <main className="max-w-3xl mx-auto px-4 mt-6 space-y-6">
 
         {/* Banner xác thực hợp lệ */}
@@ -567,6 +574,7 @@ const PublicPrescription = () => {
         </div>
 
       </main>
+      )}
     </div>
   );
 };
