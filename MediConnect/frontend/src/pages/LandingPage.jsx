@@ -235,10 +235,7 @@ const LandingPage = () => {
         {/* Hero Title */}
         <h1 className="text-3xl sm:text-5xl font-black text-[#2D2522] tracking-tight leading-[1.15] max-w-3xl mx-auto">
           Trợ lý Y khoa AI Thông minh<br />
-          <span className="text-[#D97251] relative inline-block">
-            của Bạn và Gia đình
-            <span className="absolute -bottom-1 left-0 w-full h-1 bg-[#2D2522] rounded-full"></span>
-          </span>
+          <span className="text-[#D97251]">của Bạn và Gia đình</span>
         </h1>
 
         {/* Subtitle */}
