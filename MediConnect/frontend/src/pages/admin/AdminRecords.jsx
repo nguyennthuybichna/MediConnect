@@ -279,9 +279,6 @@ export default function AdminRecords() {
                       <Brain className="w-4 h-4 text-brand-600" />
                       <span className="text-[10px] font-extrabold text-brand-700 uppercase tracking-wider">AI Đề xuất</span>
                     </div>
-                    <span className="bg-brand-100/70 text-brand-800 text-[9px] font-bold px-1.5 py-0.5 rounded border border-brand-200">
-                      {activeRecord.aiPrediction.confidence}%
-                    </span>
                   </div>
                   <p className="text-xs font-extrabold text-slate-800 leading-tight">
                     {activeRecord.aiPrediction.disease}

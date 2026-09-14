@@ -146,10 +146,14 @@ const AITriage = () => {
 
       const reply = res.data.reply;
 
-      const isResult = /dự đoán bệnh|độ tin cậy/i.test(reply);
+      const isResult = /dự đoán bệnh|độ tin cậy|kết quả phân tích sơ bộ|chẩn đoán sơ bộ/i.test(reply);
 
       let disease = '';
-      const diseaseMatch = reply.match(/Dự đoán bệnh:\s*\*\*(.*?)\*\*/i) || reply.match(/Dự đoán bệnh:\s*(.*?)(?:\n|$)/i);
+      const diseaseMatch =
+        reply.match(/Dự đoán bệnh sơ bộ:\s*\*\*(.*?)\*\*/i) ||
+        reply.match(/Dự đoán bệnh:\s*\*\*(.*?)\*\*/i) ||
+        reply.match(/Dự đoán sơ bộ:\s*\*\*(.*?)\*\*/i) ||
+        reply.match(/Dự đoán bệnh:\s*(.*?)(?:\n|$)/i);
       if (diseaseMatch) {
         disease = diseaseMatch[1].trim();
       }

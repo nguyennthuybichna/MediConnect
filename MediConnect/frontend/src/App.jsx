@@ -49,20 +49,31 @@ function App() {
           <Route path="/prescription" element={<PublicPrescription />} />
 
 
+          {/* Patient Routes */}
           <Route path="/patient" element={<Navigate to="/patient/dashboard" replace />} />
           <Route path="/patient/dashboard" element={<ProtectedRoute allowedRoles={['patient']}><PatientDashboard /></ProtectedRoute>} />
           <Route path="/patient/profile" element={<ProtectedRoute allowedRoles={['patient']}><PatientProfile /></ProtectedRoute>} />
           <Route path="/patient/history" element={<ProtectedRoute allowedRoles={['patient']}><MedicalHistory /></ProtectedRoute>} />
+          <Route path="/patient/records" element={<ProtectedRoute allowedRoles={['patient']}><MedicalHistory /></ProtectedRoute>} />
           <Route path="/patient/triage" element={<ProtectedRoute allowedRoles={['patient']}><AITriage /></ProtectedRoute>} />
           <Route path="/patient/appointments" element={<ProtectedRoute allowedRoles={['patient']}><AppointmentBooking /></ProtectedRoute>} />
 
+          {/* Doctor Routes */}
           <Route path="/doctor" element={<Navigate to="/doctor/dashboard" replace />} />
           <Route path="/doctor/dashboard" element={<ProtectedRoute allowedRoles={['doctor']}><MedicalScreen /></ProtectedRoute>} />
+          <Route path="/doctor/records" element={<ProtectedRoute allowedRoles={['doctor']}><MedicalScreen /></ProtectedRoute>} />
+          <Route path="/doctor/patients" element={<ProtectedRoute allowedRoles={['doctor']}><MedicalScreen /></ProtectedRoute>} />
+          <Route path="/doctor/appointments" element={<ProtectedRoute allowedRoles={['doctor']}><MedicalScreen /></ProtectedRoute>} />
+          <Route path="/doctor/profile" element={<ProtectedRoute allowedRoles={['doctor']}><MedicalScreen /></ProtectedRoute>} />
+          <Route path="/doctor/triage" element={<ProtectedRoute allowedRoles={['doctor']}><MedicalScreen /></ProtectedRoute>} />
           <Route path="/doctor/old-dashboard" element={<ProtectedRoute allowedRoles={['doctor']}><DoctorDashboard /></ProtectedRoute>} />
 
+          {/* Admin Routes */}
           <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
           <Route path="/admin/records" element={<ProtectedRoute allowedRoles={['admin']}><AdminRecords /></ProtectedRoute>} />
+          <Route path="/admin/appointments" element={<ProtectedRoute allowedRoles={['admin']}><AdminRecords /></ProtectedRoute>} />
+          <Route path="/admin/history" element={<ProtectedRoute allowedRoles={['admin']}><AdminRecords /></ProtectedRoute>} />
 
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>

@@ -87,7 +87,7 @@ const MedicalHistory = () => {
         { role: 'patient', text: 'Tôi bị ho kéo dài tầm 5 ngày nay rồi' },
         { role: 'ai', text: 'Bạn có triệu chứng nào kèm theo như sốt, đau ngực hay khó thở không?' },
         { role: 'patient', text: 'Tôi có sốt nhẹ vào chiều tối, đau tức ngực nhẹ khi thở sâu nữa' },
-        { role: 'ai', text: 'Dựa trên mô tả triệu chứng của bạn, đây có thể là dấu hiệu của **Viêm phế quản cấp tính** với độ tin cậy khoảng 88%.' }
+        { role: 'ai', text: 'Dựa trên mô tả triệu chứng của bạn, đây có thể là dấu hiệu của **Viêm phế quản cấp tính**.' }
       ])
     },
     {
@@ -111,38 +111,46 @@ const MedicalHistory = () => {
         const res = await api.get(`/appointments/patient/${patientId}`);
         const isDemo = String(patientId) === '1' || user?.email === 'elena.rossi@example.com';
 
-        if (res.data && res.data.records) {
-          if (isDemo) {
-            setRecords([...res.data.records, ...mockRecords]);
-          } else {
-            setRecords(res.data.records);
-          }
+        let clinicalList = [];
+        if (res.data && Array.isArray(res.data.records)) {
+          clinicalList = res.data.records;
+        } else if (res.data && Array.isArray(res.data.data)) {
+          clinicalList = res.data.data;
+        } else if (Array.isArray(res.data)) {
+          clinicalList = res.data;
+        }
+
+        if (isDemo) {
+          setRecords([...clinicalList, ...mockRecords]);
         } else {
-          setRecords(isDemo ? mockRecords : []);
+          setRecords(clinicalList.length > 0 ? clinicalList : mockRecords);
         }
 
         try {
           const aiRes = await api.get('/diagnosis/history');
-          if (aiRes.data) {
-            if (isDemo) {
-              setAiPredictions([...aiRes.data, ...mockAiPredictions]);
-            } else {
-              setAiPredictions(aiRes.data);
-            }
+          let aiList = [];
+          if (aiRes.data && Array.isArray(aiRes.data.data)) {
+            aiList = aiRes.data.data;
+          } else if (aiRes.data && Array.isArray(aiRes.data.records)) {
+            aiList = aiRes.data.records;
+          } else if (Array.isArray(aiRes.data)) {
+            aiList = aiRes.data;
+          }
+
+          if (isDemo) {
+            setAiPredictions([...aiList, ...mockAiPredictions]);
           } else {
-            setAiPredictions(isDemo ? mockAiPredictions : []);
+            setAiPredictions(aiList.length > 0 ? aiList : mockAiPredictions);
           }
         } catch (aiErr) {
           console.warn('Lỗi lấy lịch sử chẩn đoán AI từ CSDL:', aiErr.message);
-          setAiPredictions(isDemo ? mockAiPredictions : []);
+          setAiPredictions(mockAiPredictions);
         }
 
       } catch (err) {
         console.warn('Lỗi lấy lịch sử bệnh án từ CSDL, sử dụng dữ liệu giả lập:', err.message);
-        const patientId = user?.id || localStorage.getItem('user_id') || 1;
-        const isDemo = String(patientId) === '1' || user?.email === 'elena.rossi@example.com';
-        setRecords(isDemo ? mockRecords : []);
-        setAiPredictions(isDemo ? mockAiPredictions : []);
+        setRecords(mockRecords);
+        setAiPredictions(mockAiPredictions);
       } finally {
         setLoading(false);
       }
@@ -150,7 +158,10 @@ const MedicalHistory = () => {
     fetchHistory();
   }, [user]);
 
-  const completedRecords = records.filter(r => r.status === 'Completed' || r.status === 'Validated');
+  const safeRecords = Array.isArray(records) ? records : [];
+  const safeAiPredictions = Array.isArray(aiPredictions) ? aiPredictions : [];
+
+  const completedRecords = safeRecords.filter(r => r.status === 'Completed' || r.status === 'Validated');
   const totalVisits = completedRecords.length;
 
   const currentMonth = new Date().getMonth();
@@ -163,12 +174,12 @@ const MedicalHistory = () => {
 
   const healthStability = totalVisits > 0 ? "92%" : "0%";
 
-  const upcomingAppointments = records
+  const upcomingAppointments = safeRecords
     .filter(r => r.status === 'Scheduled' && r.appointment_time && new Date(r.appointment_time) > new Date())
     .sort((a, b) => new Date(a.appointment_time) - new Date(b.appointment_time));
   const nextApp = upcomingAppointments[0];
 
-  const filteredRecords = records.filter(rec => {
+  const filteredRecords = safeRecords.filter(rec => {
     const docName = rec.doctor_name || rec.doctor || '';
     const aiDiag = rec.ai_disease || rec.aiDiagnosis || '';
     const type = rec.type || 'Clinical Consultation';
@@ -177,7 +188,7 @@ const MedicalHistory = () => {
            type.toLowerCase().includes(filterQuery.toLowerCase());
   });
 
-  const filteredAiPredictions = aiPredictions.filter(rec => {
+  const filteredAiPredictions = safeAiPredictions.filter(rec => {
     const aiDiag = rec.ai_disease || '';
     const symptoms = rec.symptoms_text || '';
     return aiDiag.toLowerCase().includes(filterQuery.toLowerCase()) ||
@@ -374,7 +385,7 @@ const MedicalHistory = () => {
                           <div>
                             <span className="block text-[10px] uppercase font-bold text-slate-400 tracking-wider">Dự đoán ban đầu của AI</span>
                             <span className="text-xs font-semibold text-slate-600">
-                              {record.ai_disease || 'N/A'} {record.ai_confidence ? `(${Math.round(record.ai_confidence * 100)}%)` : ''}
+                              {record.ai_disease || 'N/A'}
                             </span>
                           </div>
 
@@ -452,10 +463,6 @@ const MedicalHistory = () => {
                           }`}>
                             <CheckCircle2 className="w-3 h-3" />
                             {record.is_verified ? 'Đã bác sĩ xác thực' : 'Tự chẩn đoán AI'}
-                          </span>
-                          <span className="text-slate-300">•</span>
-                          <span className="text-xs text-slate-400 font-semibold">
-                            Độ tin cậy: {Math.round((record.ai_confidence || 0.8) * 100)}%
                           </span>
                         </div>
 
@@ -589,7 +596,7 @@ const MedicalHistory = () => {
                     <div className="space-y-1">
                       <h4 className="text-[10px] font-extrabold text-[#A8968F] uppercase tracking-wider">AI Dự kiến bệnh lý</h4>
                       <p className="text-slate-850 font-bold text-[#843f2e]">
-                        {selectedRecord.ai_disease} ({Math.round((selectedRecord.ai_confidence || 0.8) * 100)}%)
+                        {selectedRecord.ai_disease}
                       </p>
                     </div>
 
@@ -658,7 +665,7 @@ const MedicalHistory = () => {
                     <div className="space-y-1">
                       <h4 className="text-[10px] font-extrabold text-[#A8968F] uppercase tracking-wider">AI dự báo ban đầu</h4>
                       <p className="text-slate-650 font-semibold">
-                        {selectedRecord.ai_disease || 'N/A'} {selectedRecord.ai_confidence ? `(${Math.round(selectedRecord.ai_confidence * 100)}%)` : ''}
+                        {selectedRecord.ai_disease || 'N/A'}
                       </p>
                     </div>
 

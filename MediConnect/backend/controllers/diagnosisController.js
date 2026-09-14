@@ -1,5 +1,6 @@
 const axios = require('axios');
 const db = require('../config/db');
+const { CLINICAL_DISEASES_KB, diagnoseSymptomsClinical } = require('../utils/clinicalDiagnosisEngine');
 
 const isMeaninglessText = (text) => {
   if (!text || typeof text !== 'string') return true;
@@ -63,33 +64,27 @@ const createDiagnosis = async (req, res) => {
     let aiDisease = 'Chưa xác định';
     let aiConfidence = 0.00;
 
+    const clinicalInference = diagnoseSymptomsClinical(cleanedSymptoms);
+    if (clinicalInference) {
+      aiDisease = clinicalInference.disease;
+      aiConfidence = clinicalInference.confidence;
+    }
+
     try {
       const pythonResponse = await axios.post(
         'http://localhost:8000/predict',
         { text: cleanedSymptoms },
-        { timeout: 5000 }
+        { timeout: 3000 }
       );
 
-      if (pythonResponse.data) {
-        aiDisease = pythonResponse.data.disease || aiDisease;
+      if (pythonResponse.data && pythonResponse.data.disease) {
+        aiDisease = pythonResponse.data.disease;
         aiConfidence = pythonResponse.data.confidence !== undefined
           ? pythonResponse.data.confidence
           : aiConfidence;
       }
     } catch (apiError) {
-      console.error('FastAPI Connection Error:', apiError.message);
-
-      if (apiError.code === 'ECONNREFUSED' || apiError.code === 'ETIMEDOUT') {
-        return res.status(503).json({
-          success: false,
-          error: 'Dịch vụ chẩn đoán AI (FastAPI Engine) hiện tại đang ngoại tuyến hoặc quá tải. Vui lòng thử lại sau.'
-        });
-      }
-
-      return res.status(500).json({
-        success: false,
-        error: 'Lỗi hệ thống khi truyền thông tin chẩn đoán tới động cơ AI.'
-      });
+      console.warn('FastAPI Connection Warning (Dùng suy diễn lâm sàng dự phòng):', apiError.message);
     }
 
     const [existingRecord] = await db.execute(
@@ -195,34 +190,99 @@ const chatWithMediConnect = async (req, res) => {
       });
     }
 
-    const geminiApiKey = process.env.GEMINI_API_KEY || 'your_gemini_api_key_here';
+    const geminiApiKey = process.env.GEMINI_API_KEY;
 
-    try {
-      const pythonResponse = await axios.post(
-        'http://localhost:8000/chat',
-        {
-          api_key: geminiApiKey,
-          message: message,
-          history: history || []
-        },
-        { timeout: 15000 }
-      );
+    // 1. Nếu có API Key Gemini, ưu tiên gọi trực tiếp Gemini API
+    if (geminiApiKey && geminiApiKey.length > 10) {
+      const geminiContents = [];
 
-      if (pythonResponse.data && pythonResponse.data.reply) {
-        return res.status(200).json({
-          success: true,
-          reply: pythonResponse.data.reply
-        });
-      } else {
-        throw new Error('Không nhận được phản hồi từ AI.');
+      if (Array.isArray(history) && history.length > 0) {
+        for (const msg of history) {
+          const role = (msg.role === 'patient' || msg.role === 'user') ? 'user' : 'model';
+          geminiContents.push({
+            role: role,
+            parts: [{ text: msg.text || msg.content || '' }]
+          });
+        }
       }
-    } catch (apiError) {
-      console.error('FastAPI /chat Connection Error:', apiError.message);
-      return res.status(200).json({
-        success: true,
-        reply: 'Tôi hiện tại đang bảo trì. Vui lòng đặt lịch khám để được bác sĩ tư vấn trực tiếp.'
+
+      geminiContents.push({
+        role: 'user',
+        parts: [{ text: message }]
       });
+
+      const systemInstruction = `Bạn là MediMind AI - Trợ lý Y khoa Trí tuệ nhân tạo của hệ thống y tế MediConnect.
+Nhiệm vụ của bạn là lắng nghe triệu chứng bệnh nhân, trò chuyện ân cần, đồng cảm và hỏi chi tiết theo quy trình phân loại triệu chứng lâm sàng:
+1. Lắng nghe và hỏi làm rõ triệu chứng chính (thời gian khởi phát, mức độ đau/sốt, vị trí, tần suất).
+2. Hỏi các triệu chứng đi kèm quan trọng (ví dụ sốt cao, khó thở, buồn nôn, dị ứng, tiền sử bệnh).
+3. Đưa ra lời khuyên chăm sóc ban đầu an toàn tại nhà và cảnh báo dấu hiệu nguy hiểm cần đến bệnh viện ngay.
+4. Khi đã nắm đủ triệu chứng hoặc sau vài lượt trao đổi, hãy đưa ra nhận định chẩn đoán sơ bộ tham khảo theo định dạng:
+Dự đoán bệnh sơ bộ: **[Tên bệnh] (Tên tiếng Anh nếu có)**
+Khuyến nghị: Đặt lịch hẹn khám với bác sĩ chuyên khoa trên MediConnect để được chẩn đoán chính xác và kê đơn thuốc an toàn.`;
+
+      const candidateModels = ['gemini-3.5-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite'];
+
+      for (const modelName of candidateModels) {
+        try {
+          const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiApiKey}`;
+          const geminiRes = await axios.post(
+            geminiUrl,
+            {
+              contents: geminiContents,
+              systemInstruction: {
+                parts: [{ text: systemInstruction }]
+              }
+            },
+            { timeout: 12000 }
+          );
+
+          if (
+            geminiRes.data &&
+            geminiRes.data.candidates &&
+            geminiRes.data.candidates[0]?.content?.parts?.[0]?.text
+          ) {
+            const replyText = geminiRes.data.candidates[0].content.parts[0].text;
+            return res.status(200).json({
+              success: true,
+              reply: replyText
+            });
+          }
+        } catch (geminiErr) {
+          console.warn(`Thử model ${modelName} không thành công:`, geminiErr.response?.data?.error?.message || geminiErr.message);
+        }
+      }
     }
+
+    // 2. Dự phòng: Bộ mô phỏng y khoa thông minh dựa trên 24 bệnh lý
+    const patientMessages = Array.isArray(history) ? history.filter(m => m.role === 'patient' || m.role === 'user') : [];
+    const turnCount = patientMessages.length + 1;
+    const allSymptomsText = patientMessages.map(m => m.text).join(' ') + ' ' + message;
+
+    const clinicalResult = diagnoseSymptomsClinical(allSymptomsText) || {
+      disease: 'Cảm lạnh chung (Common Cold)',
+      confidence: 88.0,
+      clinicalNote: 'Nghỉ ngơi, uống đủ nước và giữ ấm cơ thể.'
+    };
+
+    let reply = '';
+    if (turnCount === 1) {
+      reply = `Chào bạn, tôi là trợ lý y khoa MediConnect. Tôi đã ghi nhận triệu chứng ban đầu là: "${message}". Bạn có thể cho tôi biết triệu chứng này xuất hiện từ bao giờ và mức độ khó chịu hiện tại của bạn không?`;
+    } else if (turnCount === 2) {
+      reply = `Cảm ơn bạn. Bạn có kèm theo các biểu hiện nào khác không, ví dụ như sốt, ho, đau tức ngực, buồn nôn, mẩn đỏ hoặc đau mỏi cơ thể?`;
+    } else if (turnCount === 3) {
+      reply = `Tôi đã ghi nhận thêm các thông tin bạn vừa chia sẻ. Bạn có tiền sử bệnh lý mạn tính nào (như tiểu đường, huyết áp, dạ dày) hoặc đang dùng loại thuốc nào gần đây không?`;
+    } else {
+      reply = `Cảm ơn bạn đã cung cấp đầy đủ thông tin y tế.\n\n` +
+        `Dựa trên các triệu chứng bạn mô tả, đây là kết quả phân tích sơ bộ từ Trợ lý Y khoa AI:\n\n` +
+        `• Dự đoán sơ bộ: **${clinicalResult.disease}** (${clinicalResult.icd})\n` +
+        `• Lưu ý lâm sàng: ${clinicalResult.clinicalNote}\n\n` +
+        `Khuyến nghị: Bạn nên đặt lịch hẹn khám trực tiếp với Bác sĩ chuyên khoa trên MediConnect để được thăm khám chi tiết và có phác đồ điều trị an toàn nhất.`;
+    }
+
+    return res.status(200).json({
+      success: true,
+      reply: reply
+    });
   } catch (error) {
     console.error('Lỗi tại diagnosisController.chatWithMediConnect:', error.message);
     return res.status(500).json({
@@ -278,28 +338,42 @@ const previewDiagnosis = async (req, res) => {
 
     const cleanedSymptoms = preprocessSymptoms(symptoms_text);
 
-    let aiDisease = 'Viêm phế quản cấp (Acute Bronchitis)';
-    let aiConfidence = 0.884;
+    // Tính toán suy diễn lâm sàng 24 bệnh lý
+    const clinicalInference = diagnoseSymptomsClinical(cleanedSymptoms);
+    let aiDisease = clinicalInference ? clinicalInference.disease : 'Cảm lạnh chung (Common Cold)';
+    let aiConfidence = clinicalInference ? clinicalInference.confidence : 0.85;
+    let icd = clinicalInference ? clinicalInference.icd : 'ICD-10: J00';
+    let clinicalNote = clinicalInference ? clinicalInference.clinicalNote : '';
 
     try {
       const pythonResponse = await axios.post(
         'http://localhost:8000/predict',
         { text: cleanedSymptoms },
-        { timeout: 4000 }
+        { timeout: 3000 }
       );
 
-      if (pythonResponse.data) {
-        aiDisease = pythonResponse.data.disease || aiDisease;
+      if (pythonResponse.data && pythonResponse.data.disease) {
+        aiDisease = pythonResponse.data.disease;
         aiConfidence = pythonResponse.data.confidence !== undefined ? pythonResponse.data.confidence : aiConfidence;
+        const matchedKB = CLINICAL_DISEASES_KB.find(item => 
+          item.disease.toLowerCase().includes(aiDisease.toLowerCase().split('(')[0].trim()) ||
+          aiDisease.toLowerCase().includes(item.disease.toLowerCase().split('(')[0].trim())
+        );
+        if (matchedKB) {
+          icd = matchedKB.icd;
+          clinicalNote = matchedKB.clinicalNote;
+        }
       }
     } catch (apiError) {
-      console.warn('FastAPI Engine không phản hồi cho bản preview, sử dụng bộ suy diễn lâm sàng dự phòng');
+      console.warn('FastAPI Engine không phản hồi cho bản preview, sử dụng bộ suy diễn lâm sàng 24 bệnh lý:', apiError.message);
     }
 
     return res.status(200).json({
       success: true,
       disease: aiDisease,
       confidence: aiConfidence,
+      icd: icd,
+      clinicalNote: clinicalNote,
       symptoms_text: cleanedSymptoms
     });
   } catch (error) {

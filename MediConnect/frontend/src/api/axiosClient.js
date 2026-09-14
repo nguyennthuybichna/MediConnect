@@ -1,6 +1,13 @@
 import axios from 'axios';
 
-const rawBaseUrl = (import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'https://mediconnect-backend-l3zi.onrender.com/api').trim();
+const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+const defaultUrl = isLocal ? 'http://localhost:5001/api' : 'https://mediconnect-backend-l3zi.onrender.com/api';
+let rawBaseUrl = (import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || defaultUrl).trim();
+
+if (isLocal && rawBaseUrl.includes('render.com')) {
+  rawBaseUrl = 'http://localhost:5001/api';
+}
+
 const cleanBaseUrl = rawBaseUrl.replace(/\/+$/, '');
 const baseURL = cleanBaseUrl.endsWith('/api') ? cleanBaseUrl : `${cleanBaseUrl}/api`;
 

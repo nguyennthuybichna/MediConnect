@@ -24,102 +24,15 @@ import {
   ExternalLink
 } from 'lucide-react';
 import api from '../services/api';
-
-// Bộ từ điển y khoa 24 bệnh chuẩn quốc tế của hệ thống MediConnect (với mã ICD-10 và hướng dẫn lâm sàng)
-const CLINICAL_DISEASES_KB = [
-  {
-    keywords: ['ho', 'sốt', 'tức ngực', 'phế quản', 'đờm', 'viêm họng', 'khàn giọng'],
-    disease: 'Viêm phế quản cấp (Acute Bronchitis)',
-    icd: 'ICD-10: J20.9',
-    confidence: 88.4,
-    clinicalNote: 'Dự đoán dựa trên triệu chứng sốt nhẹ, ho khan kéo dài và đau tức ngực. Cần loại trừ viêm phổi thùy và COVID-19 qua ống nghe phổi và xét nghiệm máu nếu sốt cao liên tục.'
-  },
-  {
-    keywords: ['đau đầu', 'nửa đầu', 'migraine', 'chóng mặt', 'sợ ánh sáng', 'buồn nôn'],
-    disease: 'Đau nửa đầu Migraine (Migraine with aura)',
-    icd: 'ICD-10: G43.9',
-    confidence: 91.2,
-    clinicalNote: 'Đặc trưng bởi các cơn đau nhói một bên đầu kéo dài kèm nhạy cảm với ánh sáng/tiếng ồn. Cần nghỉ ngơi trong phòng tối và theo dõi huyết áp để loại trừ cơn tăng huyết áp cấp.'
-  },
-  {
-    keywords: ['đau bụng', 'ruột thừa', 'hố chậu', 'buồn nôn', 'sốt nhẹ', 'đau quặn'],
-    disease: 'Nghi ngờ Viêm ruột thừa cấp (Acute Appendicitis)',
-    icd: 'ICD-10: K35.8',
-    confidence: 85.6,
-    clinicalNote: 'Cảnh báo: Đau khu trú vùng hố chậu phải kèm phản ứng thành bụng là dấu hiệu ngoại khoa cấp cứu. Khuyến nghị đến ngay cơ sở y tế gần nhất để siêu âm ổ bụng.'
-  },
-  {
-    keywords: ['hen', 'khó thở', 'khò khè', 'rít', 'co thắt'],
-    disease: 'Hen phế quản (Bronchial Asthma)',
-    icd: 'ICD-10: J45.9',
-    confidence: 89.5,
-    clinicalNote: 'Triệu chứng khó thở thì thở ra kèm tiếng rít khí phế quản. Cần chuẩn bị sẵn ống hít Salbutamol cắt cơn và tránh xa các tác nhân dị nguyên khói bụi.'
-  },
-  {
-    keywords: ['trào ngược', 'ợ nóng', 'ợ chua', 'nóng rát', 'thực quản', 'gerd'],
-    disease: 'Trào ngược dạ dày thực quản (GERD)',
-    icd: 'ICD-10: K21.9',
-    confidence: 87.0,
-    clinicalNote: 'Hiện tượng dịch vị axit trào ngược gây nóng rát sau xương ức và đắng miệng sau khi ăn no. Khuyên tránh nằm ngay sau ăn và hạn chế cà phê, đồ cay nóng.'
-  },
-  {
-    keywords: ['sốt cao', 'phát ban', 'xuất huyết', 'muỗi', 'đau cơ', 'mỏi mắt'],
-    disease: 'Sốt xuất huyết Dengue (Dengue Fever)',
-    icd: 'ICD-10: A97',
-    confidence: 90.1,
-    clinicalNote: 'Đặc trưng bởi sốt cao đột ngột 39-40 độ, đau nhức hốc mắt và đau cơ khớp. Cần xét nghiệm công thức máu kiểm tra số lượng tiểu cầu mỗi ngày để phòng tránh sốc.'
-  },
-  {
-    keywords: ['khớp', 'đau khớp', 'sưng khớp', 'cứng khớp', 'gối'],
-    disease: 'Viêm khớp thoái hóa (Osteoarthritis / Arthritis)',
-    icd: 'ICD-10: M19.9',
-    confidence: 86.8,
-    clinicalNote: 'Biểu hiện đau tăng khi vận động và cứng khớp buổi sáng dưới 30 phút. Khuyên duy trì cân nặng hợp lý và bổ sung dưỡng chất sụn khớp Glucosamine.'
-  },
-  {
-    keywords: ['tiểu nhiều', 'khát nước', 'sụt cân', 'tiểu đường', 'đường huyết'],
-    disease: 'Đái tháo đường tuýp 2 (Diabetes Mellitus)',
-    icd: 'ICD-10: E11.9',
-    confidence: 89.0,
-    clinicalNote: 'Tam chứng: Ăn nhiều, uống nhiều, tiểu nhiều và sụt cân nhanh. Cần làm xét nghiệm đường huyết lúc đói (Fasting Glucose) và định lượng chỉ số HbA1c.'
-  },
-  {
-    keywords: ['huyết áp', 'hoa mắt', 'chóng mặt', 'đỏ bừng', 'tăng huyết áp'],
-    disease: 'Tăng huyết áp vô căn (Primary Hypertension)',
-    icd: 'ICD-10: I10',
-    confidence: 87.5,
-    clinicalNote: 'Được mệnh danh là kẻ giết người thầm lặng. Cần đo huyết áp liên tục 3 ngày liên tiếp vào buổi sáng và giảm lượng muối trong khẩu phần ăn hàng ngày.'
-  },
-  {
-    keywords: ['mề đay', 'ngứa', 'dị ứng', 'mẩn đỏ', 'phát ban'],
-    disease: 'Dị ứng cấp tính & Mề đay (Allergy / Urticaria)',
-    icd: 'ICD-10: T78.4',
-    confidence: 92.0,
-    clinicalNote: 'Phản ứng quá mẫn miễn dịch gây sẩn phù ngứa rát trên bề mặt da. Cần rà soát lại thức ăn (hải sản, trứng, sữa) hoặc thuốc mới sử dụng trong 24 giờ qua.'
-  },
-  {
-    keywords: ['thủy đậu', 'bọng nước', 'nốt đậu', 'ngứa toàn thân'],
-    disease: 'Thủy đậu (Chickenpox)',
-    icd: 'ICD-10: B01.9',
-    confidence: 93.4,
-    clinicalNote: 'Các nốt phỏng nước dạng giọt sương trên nền da đỏ lan tỏa toàn thân. Cần bôi dung dịch sát khuẩn Xanh Methylen và cách ly tránh lây lan.'
-  },
-  {
-    keywords: ['tiểu buốt', 'tiểu rắt', 'nước tiểu đục', 'đau hạ vị', 'tiết niệu'],
-    disease: 'Nhiễm trùng đường tiết niệu (Urinary Tract Infection)',
-    icd: 'ICD-10: N39.0',
-    confidence: 88.0,
-    clinicalNote: 'Vi khuẩn xâm nhập gây viêm niêm mạc bàng quang và niệu đạo. Khuyên uống nhiều nước (2-2.5L/ngày) và cấy nước tiểu làm kháng sinh đồ nếu tái phát.'
-  }
-];
+import { CLINICAL_DISEASES_KB, diagnoseSymptomsClinical } from '../utils/clinicalDiagnosisEngine';
 
 const SUGGESTIONS = [
-  'Ho có đờm, sốt',
+  'ho, sổ mũi',
+  'Ho có đờm, tức ngực',
   'Đau nửa đầu Migraine',
-  'Đau bụng nghi ruột thừa',
-  'Tức ngực, khó thở',
+  'Ợ chua, trào ngược dạ dày',
   'Nổi mẩn đỏ, ngứa da',
-  'Ợ chua, nóng rát dạ dày'
+  'Sốt cao liên tục, đau hốc mắt'
 ];
 
 const LandingPage = () => {
@@ -135,43 +48,45 @@ const LandingPage = () => {
     setIsAnalyzing(true);
 
     try {
-      // Gọi API preview chẩn đoán từ Backend
+      // 1. Luôn tính toán bộ suy diễn lâm sàng 24 bệnh trước
+      const clinicalLocal = diagnoseSymptomsClinical(symptomText);
+
+      // 2. Gọi API preview chẩn đoán từ Backend
       const res = await api.post('/public/diagnosis/preview', { text: symptomText });
       
       if (res.data && res.data.success) {
         const returnedDisease = res.data.disease || '';
-        // Khớp với cơ sở tri thức y khoa để lấy mã ICD-10 và hướng dẫn lâm sàng
-        const matched = CLINICAL_DISEASES_KB.find(item => 
-          returnedDisease.toLowerCase().includes(item.disease.toLowerCase().split('(')[0].trim().toLowerCase()) ||
-          symptomText.toLowerCase().split(' ').some(w => item.keywords.includes(w))
-        ) || CLINICAL_DISEASES_KB[0];
+        const matchedKB = CLINICAL_DISEASES_KB.find(item => 
+          item.disease.toLowerCase().includes(returnedDisease.toLowerCase().split('(')[0].trim()) ||
+          returnedDisease.toLowerCase().includes(item.disease.toLowerCase().split('(')[0].trim())
+        );
 
         setPredictionResult({
-          disease: returnedDisease || matched.disease,
-          icd: matched.icd || 'ICD-10: R69',
-          confidence: res.data.confidence ? Math.round(res.data.confidence * 1000) / 10 : matched.confidence,
-          clinicalNote: matched.clinicalNote
+          disease: returnedDisease || (matchedKB ? matchedKB.disease : (clinicalLocal ? clinicalLocal.disease : 'Cảm lạnh chung (Common Cold)')),
+          icd: res.data.icd || (matchedKB ? matchedKB.icd : (clinicalLocal ? clinicalLocal.icd : 'ICD-10: J00')),
+          confidence: res.data.confidence 
+            ? (res.data.confidence > 1 ? res.data.confidence : Math.round(res.data.confidence * 1000) / 10)
+            : (clinicalLocal ? clinicalLocal.confidence : 88.5),
+          clinicalNote: res.data.clinicalNote || (matchedKB ? matchedKB.clinicalNote : (clinicalLocal ? clinicalLocal.clinicalNote : ''))
         });
       } else {
-        throw new Error('Fallback KB');
+        throw new Error('Fallback to clinical engine');
       }
     } catch (err) {
-      // Nếu Backend bận, suy diễn lâm sàng thông minh trực tiếp từ bộ tri thức 24 bệnh
-      const lower = symptomText.toLowerCase();
-      const matched = CLINICAL_DISEASES_KB.find(item =>
-        item.keywords.some(kw => lower.includes(kw))
-      ) || CLINICAL_DISEASES_KB[0];
-
-      setPredictionResult({
-        disease: matched.disease,
-        icd: matched.icd,
-        confidence: matched.confidence,
-        clinicalNote: matched.clinicalNote
-      });
+      // Nếu Backend bận hoặc đang offline, sử dụng bộ suy diễn lâm sàng chuẩn 24 bệnh
+      const clinicalLocal = diagnoseSymptomsClinical(symptomText);
+      if (clinicalLocal) {
+        setPredictionResult({
+          disease: clinicalLocal.disease,
+          icd: clinicalLocal.icd,
+          confidence: clinicalLocal.confidence,
+          clinicalNote: clinicalLocal.clinicalNote
+        });
+      }
     } finally {
       setTimeout(() => {
         setIsAnalyzing(false);
-      }, 450);
+      }, 400);
     }
   };
 
@@ -318,12 +233,7 @@ const LandingPage = () => {
           </div>
 
           {/* Action Row */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
-            <p className="text-[11px] text-[#8C7E77] flex items-center gap-1">
-              <ShieldCheck className="w-3.5 h-3.5 text-[#D97251]" />
-              <span>Dữ liệu xử lý qua FastAPI Model & gửi thẳng lại màn hình</span>
-            </p>
-
+          <div className="flex items-center justify-end pt-2">
             <button
               type="button"
               onClick={handleAnalyze}
@@ -366,13 +276,6 @@ const LandingPage = () => {
                       {predictionResult.disease}
                     </h4>
                   </div>
-                </div>
-
-                <div className="bg-[#FAF7F5] border border-[#EBDCD5] px-3.5 py-2 rounded-xl text-right shrink-0">
-                  <span className="text-[10px] text-[#8C7E77] block font-bold">Độ tin cậy</span>
-                  <span className="text-xs font-black text-[#D97251]">
-                    {predictionResult.confidence}%
-                  </span>
                 </div>
               </div>
 

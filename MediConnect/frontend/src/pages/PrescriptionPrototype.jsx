@@ -377,20 +377,6 @@ const PrescriptionPrototype = () => {
                     {aiAnalysis.diagnosis}
                   </h3>
 
-                  <div className="space-y-1 my-3">
-                    <div className="flex justify-end">
-                      <span className="text-xs font-extrabold text-[#10705a]">
-                        {aiAnalysis.confidence}% Confidence
-                      </span>
-                    </div>
-                    <div className="w-full bg-[#e2ede7] h-2.5 rounded-full overflow-hidden">
-                      <div
-                        className="bg-[#10705a] h-full rounded-full transition-all duration-500"
-                        style={{ width: `${aiAnalysis.confidence}%` }}
-                      />
-                    </div>
-                  </div>
-
                   <p className="text-xs text-[#6e6059] leading-relaxed mt-3 font-normal">
                     {aiAnalysis.description}
                   </p>

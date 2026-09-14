@@ -334,7 +334,7 @@ const AppointmentBooking = () => {
                         showToast('⚠️ Vui lòng chọn ngày khám từ hôm nay trở đi.');
                       }
                     }}
-                    className="w-full sm:w-auto bg-[#843f2e] hover:bg-brand-600 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition-all shadow-sm cursor-pointer outline-none focus:ring-2 focus:ring-brand-500/20 text-center"
+                    className="w-full sm:w-auto bg-brand-500 hover:bg-brand-600 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition-all shadow-sm cursor-pointer outline-none focus:ring-2 focus:ring-brand-500/20 text-center"
                   />
                 </div>
               </div>
@@ -363,8 +363,8 @@ const AppointmentBooking = () => {
                       slot.disabled
                         ? 'bg-slate-50 text-slate-300 border-slate-100 cursor-not-allowed'
                         : selectedTime === slot.time
-                          ? 'bg-[#843f2e] border-[#843f2e] text-white shadow-sm'
-                          : 'bg-white text-slate-700 border-slate-200 hover:border-brand-300 hover:bg-brand-50/20'
+                          ? 'bg-brand-500 border-brand-500 text-white shadow-sm shadow-brand-500/20'
+                          : 'bg-white text-slate-700 border-slate-200 hover:border-brand-300 hover:bg-brand-50/30'
                     }`}
                   >
                     {slot.time}

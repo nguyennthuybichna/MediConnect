@@ -28,8 +28,8 @@ const AdminDashboard = () => {
   const [showWarning, setShowWarning] = useState(true);
 
   const handleExportCsv = () => {
-    const header = "Patient ID,Detected Condition,AI Confidence,Status\n";
-    const rows = logs.map(e => `"${e.id}","${e.condition}",${e.confidence},"${e.status}"`).join("\n");
+    const header = "Patient ID,Detected Condition,Status\n";
+    const rows = logs.map(e => `"${e.id}","${e.condition}","${e.status}"`).join("\n");
     const csvContent = "data:text/csv;charset=utf-8," + encodeURIComponent(header + rows);
 
     const link = document.createElement("a");
@@ -318,7 +318,6 @@ const AdminDashboard = () => {
                 <tr className="border-b border-slate-100 text-slate-400 font-bold text-[10px] uppercase tracking-wider">
                   <th className="py-3 px-4">Mã bệnh nhân</th>
                   <th className="py-3 px-4">Bệnh lý phát hiện</th>
-                  <th className="py-3 px-4">Độ tin cậy AI</th>
                   <th className="py-3 px-4">Trạng thái</th>
                   <th className="py-3 px-4 text-right">Hành động</th>
                 </tr>
@@ -329,17 +328,6 @@ const AdminDashboard = () => {
                     <td className="py-4 px-4 font-bold text-slate-800">{log.id}</td>
                     <td className="py-4 px-4 font-medium">
                       {log.condition === 'Acute Sinusitis (Suspected)' ? 'Viêm xoang cấp tính (Nghi ngờ)' : log.condition === 'Early Cardiac Arrhythmia' ? 'Rối loạn nhịp tim giai đoạn đầu' : log.condition === 'Diabetic Retinopathy' ? 'Bệnh võng mạc đái tháo đường' : log.condition}
-                    </td>
-                    <td className="py-4 px-4">
-                      <div className="flex items-center gap-3">
-                        <span className="font-bold min-w-8">{log.confidence}%</span>
-                        <div className="w-20 bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full ${log.confidence >= 90 ? 'bg-emerald-500' : 'bg-brand-500'}`}
-                            style={{ width: `${log.confidence}%` }}
-                          ></div>
-                        </div>
-                      </div>
                     </td>
                     <td className="py-4 px-4">
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${log.statusColor}`}>

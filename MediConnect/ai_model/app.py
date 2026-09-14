@@ -412,10 +412,10 @@ async def chat(request: ChatRequest):
 
     api_key = request.api_key
 
-    if not api_key or api_key == "your_gemini_api_key_here" or not api_key.startswith("AIzaSy"):
+    if not api_key or api_key == "your_gemini_api_key_here":
         return run_mediconnect_simulation(request.message, request.history)
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={api_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key={api_key}"
 
     gemini_contents = []
     for msg in request.history:

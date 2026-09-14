@@ -134,14 +134,24 @@ const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
       .toUpperCase();
 
     return (
-      <div className="bg-[#fdf8f6] rounded-2xl p-4 border border-brand-100/50 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-brand-400/25 flex items-center justify-center text-brand-700 font-bold text-sm shrink-0 border border-brand-200">
-          {initials}
+      <div className="bg-[#fdf8f6] rounded-2xl p-3.5 border border-brand-100/50 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+          <div className="w-9 h-9 rounded-full bg-brand-400/25 flex items-center justify-center text-brand-700 font-bold text-xs shrink-0 border border-brand-200">
+            {initials}
+          </div>
+          <div className="min-w-0">
+            <h4 className="text-xs font-bold text-slate-800 truncate">{displayName}</h4>
+            <p className="text-[10px] text-slate-400 font-medium truncate">Mã: #{user?.id || '4402'}</p>
+          </div>
         </div>
-        <div className="min-w-0">
-          <h4 className="text-sm font-bold text-slate-800 truncate">{displayName}</h4>
-          <p className="text-[10px] text-slate-400 font-medium">Mã bệnh nhân: #{user?.id || '4402'}</p>
-        </div>
+
+        <button
+          onClick={handleLogout}
+          title="Đăng xuất tài khoản"
+          className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-100/70 rounded-lg transition-all active:scale-95 cursor-pointer shrink-0"
+        >
+          <LogOut className="w-4 h-4" />
+        </button>
       </div>
     );
   };
@@ -186,7 +196,7 @@ const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
                 <button
                   key={item.name}
                   onClick={() => handleNavigate(item.path)}
-                  className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition-all relative ${
+                  className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-semibold transition-all relative cursor-pointer ${
                     isActive
                       ? 'bg-brand-50/70 text-brand-800'
                       : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
@@ -205,10 +215,10 @@ const Sidebar = ({ isMobileOpen, setIsMobileOpen }) => {
             })}
           </nav>
 
-          <div className="pt-4 border-t border-[#f5eae6]/65 mt-auto shrink-0">
+          <div className="pt-3 border-t border-[#f5eae6]/80 mt-auto shrink-0">
             <button
               onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-rose-600 hover:bg-rose-50/80 hover:text-rose-700 transition-all active:scale-[0.98]"
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-rose-600 hover:bg-rose-50/80 hover:text-rose-700 transition-all active:scale-[0.98] cursor-pointer"
             >
               <LogOut className="w-5 h-5 text-rose-500" />
               <span>Đăng xuất</span>

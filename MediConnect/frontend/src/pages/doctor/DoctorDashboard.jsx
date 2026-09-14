@@ -13,8 +13,10 @@ import {
   Calendar,
   User,
   Activity,
-  Droplet
+  Droplet,
+  LogOut
 } from 'lucide-react';
+import useAuth from '../../hooks/useAuth';
 
 const MOCK_RECORDS = [
   {
@@ -84,6 +86,14 @@ const MOCK_RECORDS = [
 ];
 
 export default function DoctorDashboard() {
+  const { logout } = useAuth();
+
+  const handleLogout = () => {
+    if (logout) {
+      logout();
+    }
+  };
+
   const [selectedId, setSelectedId] = useState("BA-23091");
   const [panelOpen, setPanelOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -137,18 +147,26 @@ export default function DoctorDashboard() {
           </nav>
         </div>
 
-        <div className="p-4 border-t border-[#EFE5E0] bg-[#FCF6F3]">
-          <div className="flex items-center gap-3 p-2 rounded-2xl hover:bg-[#F7ECE8] transition-all cursor-pointer">
+        <div className="p-4 border-t border-[#EFE5E0] bg-[#FCF6F3] flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5 p-1.5 rounded-2xl hover:bg-[#F7ECE8] transition-all cursor-pointer min-w-0 flex-1">
             <img
               src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
               alt="Quản trị viên"
-              className="w-10 h-10 rounded-full object-cover border border-[#D3765F]/35"
+              className="w-9 h-9 rounded-full object-cover border border-[#D3765F]/35 shrink-0"
             />
-            <div className="text-left overflow-hidden">
+            <div className="text-left overflow-hidden min-w-0">
               <h5 className="text-xs font-extrabold text-[#843F2E] truncate leading-tight">Quản trị viên</h5>
-              <span className="text-[10px] font-bold text-[#A8968F] uppercase tracking-wider block mt-0.5">Hệ thống</span>
+              <span className="text-[10px] font-bold text-[#A8968F] uppercase tracking-wider block mt-0.5 truncate">Hệ thống</span>
             </div>
           </div>
+
+          <button
+            onClick={handleLogout}
+            title="Đăng xuất"
+            className="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-100/70 rounded-xl transition-all cursor-pointer shrink-0"
+          >
+            <LogOut className="w-4.5 h-4.5" />
+          </button>
         </div>
       </aside>
 

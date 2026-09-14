@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 import useAuth from '../../hooks/useAuth';
 import api from '../../services/api';
 import PrescriptionExport from '../../components/PrescriptionExport';
@@ -32,7 +33,8 @@ import {
   FileText,
   Video,
   FlaskConical,
-  Filter
+  Filter,
+  LogOut
 } from 'lucide-react';
 
 const INITIAL_PATIENTS = [
@@ -303,11 +305,31 @@ const INITIAL_APPOINTMENTS = [
 ];
 
 export default function MedicalScreen() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const location = useLocation();
+
+  const handleLogout = () => {
+    if (logout) {
+      logout();
+    }
+  };
 
   const [activeSidebarTab, setActiveSidebarTab] = useState('schedules');
   const [currentView, setCurrentView] = useState('dashboard');
   const [doctorActiveTab, setDoctorActiveTab] = useState('clinical');
+
+  useEffect(() => {
+    if (location.pathname === '/doctor/records' || location.pathname === '/doctor/patients') {
+      setActiveSidebarTab('records');
+      setCurrentView('patient_list');
+    } else if (location.pathname === '/doctor/profile') {
+      setActiveSidebarTab('profile');
+      setCurrentView('profile');
+    } else if (location.pathname === '/doctor/dashboard' || location.pathname === '/doctor/appointments') {
+      setActiveSidebarTab('schedules');
+      setCurrentView('dashboard');
+    }
+  }, [location.pathname]);
 
   const [profileName, setProfileName] = useState('');
   const [profileSpecialty, setProfileSpecialty] = useState('');
@@ -975,26 +997,35 @@ export default function MedicalScreen() {
           </a>
         </nav>
 
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-[#EFE5E0] bg-[#FCF6F3]">
+        <div className="absolute bottom-0 left-0 right-0 p-3.5 border-t border-[#EFE5E0] bg-[#FCF6F3] flex items-center justify-between gap-2">
           <div
             onClick={() => {
               setActiveSidebarTab('profile');
               setCurrentView('profile');
             }}
-            className="flex items-center gap-3 p-2 hover:bg-[#F7ECE8] rounded-2xl transition-all cursor-pointer"
+            className="flex items-center gap-2.5 p-1.5 hover:bg-[#F7ECE8] rounded-xl transition-all cursor-pointer flex-1 min-w-0"
+            title="Xem hồ sơ bác sĩ"
           >
             <img
               src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
               alt={profileName || user?.full_name || 'Bác sĩ'}
-              className="w-10 h-10 rounded-full object-cover border-2 border-[#D3765F]/35"
+              className="w-9 h-9 rounded-full object-cover border-2 border-[#D3765F]/35 shrink-0"
             />
-            <div className="text-left overflow-hidden">
+            <div className="text-left overflow-hidden min-w-0">
               <h5 className="text-xs font-extrabold text-[#843F2E] truncate leading-tight">{profileName || user?.full_name || 'Bác sĩ'}</h5>
-              <span className="text-[10px] font-bold text-[#A8968F] uppercase tracking-wider">
+              <span className="text-[9px] font-bold text-[#A8968F] uppercase tracking-wider truncate block">
                 {profileSpecialty === 'Cardiology Specialist' ? 'Chuyên khoa Tim mạch' : profileSpecialty === 'General Practice' ? 'Bác sĩ Đa khoa' : profileSpecialty === 'Neurology' ? 'Chuyên khoa Thần kinh' : (profileSpecialty || 'Chuyên gia')}
               </span>
             </div>
           </div>
+
+          <button
+            onClick={handleLogout}
+            title="Đăng xuất tài khoản"
+            className="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-100/70 rounded-xl transition-all active:scale-95 cursor-pointer shrink-0"
+          >
+            <LogOut className="w-4.5 h-4.5" />
+          </button>
         </div>
       </aside>
 
@@ -1040,7 +1071,7 @@ export default function MedicalScreen() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3.5 ml-4">
+          <div className="flex items-center gap-3 ml-4">
             <button
               onClick={() => showToast("Đã tải danh sách thông báo (0 chưa đọc)")}
               className="relative p-2.5 bg-white text-[#D3765F] hover:text-[#843F2E] hover:bg-[#FBEEE9]/30 rounded-full border border-[#EFE5E0] shadow-xs transition-all active:scale-95"
@@ -1050,10 +1081,23 @@ export default function MedicalScreen() {
             </button>
 
             <button
-              onClick={() => showToast("Đã truy cập menu cài đặt")}
-              className="p-2.5 bg-white text-[#A8968F] hover:text-[#843F2E] hover:bg-[#FBEEE9]/30 rounded-full border border-[#EFE5E0] shadow-xs transition-all active:scale-95"
+              onClick={() => {
+                setActiveSidebarTab('profile');
+                setCurrentView('profile');
+              }}
+              title="Cài đặt hồ sơ bác sĩ"
+              className="p-2.5 bg-white text-[#A8968F] hover:text-[#843F2E] hover:bg-[#FBEEE9]/30 rounded-full border border-[#EFE5E0] shadow-xs transition-all active:scale-95 cursor-pointer"
             >
               <Settings className="w-4.5 h-4.5" />
+            </button>
+
+            <button
+              onClick={handleLogout}
+              title="Đăng xuất tài khoản"
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-rose-50 text-rose-600 hover:text-rose-700 rounded-full border border-[#EFE5E0] hover:border-rose-200 text-xs font-bold shadow-xs transition-all active:scale-95 cursor-pointer"
+            >
+              <LogOut className="w-4 h-4 text-rose-500" />
+              <span className="hidden sm:inline">Đăng xuất</span>
             </button>
           </div>
         </header>
@@ -1579,9 +1623,6 @@ export default function MedicalScreen() {
                                 <span className="text-lg font-extrabold text-[#843F2E] block mt-1">
                                   {activePatient.aiPrediction?.disease || "Chưa xác định"}
                                 </span>
-                                <span className="inline-block mt-2 bg-emerald-50 text-[#2A7E5C] text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border border-emerald-200">
-                                  Độ tin cậy: {activePatient.aiPrediction?.confidence || 80}%
-                                </span>
                               </div>
 
                               {activePatient.symptoms && (
@@ -1600,7 +1641,6 @@ export default function MedicalScreen() {
                                     {activePatient.aiPrediction.otherDiseases.map((other, idx) => (
                                       <div key={idx} className="bg-white rounded-lg p-2 border border-[#EFE5E0] flex justify-between items-center text-xs">
                                         <span className="font-semibold text-[#6B5E59]">{other.name}</span>
-                                        <span className="font-extrabold text-[#843F2E]">{other.confidence}%</span>
                                       </div>
                                     ))}
                                   </div>
@@ -1649,9 +1689,6 @@ export default function MedicalScreen() {
                                   <div className="flex justify-between items-center">
                                     <span className="text-xs font-extrabold text-[#4A3E39]">
                                       AI dự đoán: {record.ai_disease}
-                                    </span>
-                                    <span className="bg-emerald-50 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-md border border-emerald-100">
-                                      Độ tin cậy: {Math.round((record.ai_confidence || 0.8) * 100)}%
                                     </span>
                                   </div>
 
@@ -1883,35 +1920,21 @@ export default function MedicalScreen() {
                       </span>
                     </div>
 
-                    <div className="space-y-4">
-
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-xs font-extrabold">
-                          <span className="text-[#4A3E39]">{activePatient.aiPrediction?.disease || "Bệnh hô hấp nhẹ"}</span>
-                          <span className="text-[#2A7E5C]">Độ tin cậy {activePatient.aiPrediction?.confidence || 88}%</span>
-                        </div>
-                        <div className="w-full bg-[#FAF6F3] rounded-full h-2">
-                          <div
-                            className="bg-emerald-500 h-2 rounded-full transition-all duration-500"
-                            style={{ width: `${activePatient.aiPrediction?.confidence || 88}%` }}
-                          />
-                        </div>
+                    <div className="space-y-3">
+                      <div className="p-3 bg-[#FAF6F3] rounded-xl border border-[#EFE5E0]">
+                        <span className="text-xs font-extrabold text-[#4A3E39] block">{activePatient.aiPrediction?.disease || "Bệnh hô hấp nhẹ"}</span>
                       </div>
 
-                      {activePatient.aiPrediction?.otherDiseases && activePatient.aiPrediction.otherDiseases.map((other, idx) => (
-                        <div key={idx} className="space-y-2">
-                          <div className="flex justify-between text-xs font-extrabold">
-                            <span className="text-[#80726B]">{other.name}</span>
-                            <span className="text-[#6B5E59]">Độ tin cậy {other.confidence}%</span>
-                          </div>
-                          <div className="w-full bg-[#FAF6F3] rounded-full h-2">
-                            <div
-                              className="bg-[#A8968F] h-2 rounded-full transition-all duration-500"
-                              style={{ width: `${other.confidence}%` }}
-                            />
-                          </div>
+                      {activePatient.aiPrediction?.otherDiseases && activePatient.aiPrediction.otherDiseases.length > 0 && (
+                        <div className="space-y-1.5 pt-1">
+                          <span className="text-[10px] font-bold text-[#A8968F] uppercase block">Dự đoán phụ:</span>
+                          {activePatient.aiPrediction.otherDiseases.map((other, idx) => (
+                            <div key={idx} className="p-2 bg-[#FAF6F3] rounded-lg border border-[#EFE5E0] text-xs font-semibold text-[#80726B]">
+                              {other.name}
+                            </div>
+                          ))}
                         </div>
-                      ))}
+                      )}
                     </div>
 
                     <p className="text-[10px] text-[#A8968F] italic font-semibold border-t border-[#FAF6F3] pt-3">

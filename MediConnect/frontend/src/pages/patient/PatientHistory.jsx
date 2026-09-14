@@ -320,30 +320,10 @@ const PatientHistory = () => {
                             <Bot className="w-4 h-4 text-blue-600" />
                             AI Chẩn đoán Sơ bộ
                           </div>
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">
-                            <Sparkles className="w-3 h-3 text-blue-600" />
-                            Độ tin cậy: {formatConfidence(item.ai_confidence)}
-                          </span>
                         </div>
                         <p className="text-base font-bold text-gray-900 mt-1">
                           {item.ai_disease || 'Chưa xác định'}
                         </p>
-                      </div>
-
-                      <div className="mt-3 pt-2 border-t border-blue-100/60">
-                        <div className="w-full bg-blue-100 rounded-full h-1.5 overflow-hidden">
-                          <div
-                            className="bg-blue-600 h-1.5 rounded-full"
-                            style={{
-                              width: `${Math.min(
-                                100,
-                                parseFloat(item.ai_confidence || 0) <= 1
-                                  ? parseFloat(item.ai_confidence || 0) * 100
-                                  : parseFloat(item.ai_confidence || 0)
-                              )}%`,
-                            }}
-                          />
-                        </div>
                       </div>
                     </div>
                   </div>
