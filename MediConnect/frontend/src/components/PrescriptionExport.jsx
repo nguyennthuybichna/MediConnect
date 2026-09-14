@@ -158,19 +158,51 @@ const PrescriptionExport = ({ prescriptionData, appointment_id }) => {
     }
   };
 
+  const handleDownloadQRImage = () => {
+    try {
+      const qrCanvas = document.getElementById('prescription-qr-canvas') ||
+                       (qrContainerRef.current ? qrContainerRef.current.querySelector('canvas') : null);
+      if (!qrCanvas) {
+        alert('Không tìm thấy mã QR để tải về.');
+        return;
+      }
+      const dataUrl = qrCanvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      const patientNameSafe = (data.patientName || 'BenhNhan').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').replace(/\s+/g, '_');
+      link.download = `QRCode_${patientNameSafe}.png`;
+      link.href = dataUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error('Lỗi khi tải ảnh mã QR:', err);
+      alert('Không thể tải ảnh mã QR.');
+    }
+  };
+
   const rawMedicines = data.medicines || data.medications || [];
 
   return (
     <div className="bg-white rounded-3xl p-6 border border-[#f5eae6] shadow-md max-w-md w-full mx-auto space-y-6">
 
-      <div className="flex items-center gap-3 border-b border-[#f5eae6] pb-4">
-        <div className="w-10 h-10 rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-800">
-          <FileText className="w-5 h-5" />
+      <div className="flex items-center justify-between border-b border-[#f5eae6] pb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-800">
+            <FileText className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-slate-800">Toa Thuốc Điện Tử</h3>
+            <p className="text-[11px] text-slate-400">Xem trực tuyến & Quét QR không cần đăng nhập</p>
+          </div>
         </div>
-        <div>
-          <h3 className="text-sm font-bold text-slate-800">Toa Thuốc Điện Tử</h3>
-          <p className="text-[11px] text-slate-400">Xem trực tuyến và xuất bản PDF</p>
-        </div>
+        <a
+          href={publicPrescriptionUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[10px] font-bold text-rose-800 bg-rose-50 hover:bg-rose-100 px-2.5 py-1.5 rounded-xl border border-rose-100 transition-colors"
+        >
+          Mở link công khai ↗
+        </a>
       </div>
 
       <div className="space-y-4 text-xs md:text-sm">
@@ -211,29 +243,39 @@ const PrescriptionExport = ({ prescriptionData, appointment_id }) => {
       </div>
 
       <div className="flex flex-col items-center justify-center bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-2">
-        <div ref={qrContainerRef}>
+        <div ref={qrContainerRef} className="bg-white p-2 rounded-xl border border-slate-200 shadow-2xs">
           <QRCodeCanvas
             id="prescription-qr-canvas"
             value={publicPrescriptionUrl}
             size={256}
             level="H"
             includeMargin={true}
-            style={{ width: 110, height: 110 }}
+            style={{ width: 120, height: 120 }}
           />
         </div>
-        <p className="text-[10px] text-slate-400 font-bold tracking-wider uppercase">Mã QR Tra Cứu Toa Thuốc</p>
+        <p className="text-[10px] text-slate-500 font-bold tracking-wider uppercase">Mã QR Tra Cứu Toa Thuốc</p>
+        <p className="text-[9px] text-slate-400 text-center">Quét bằng camera điện thoại sẽ mở và tải toa thuốc ngay lập tức</p>
       </div>
 
-      <div className="flex gap-3 pt-2">
-        <button
-          onClick={() => generatePDF('download')}
-          className="flex-1 py-3 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-bold rounded-2xl transition-all shadow-xs active:scale-[0.98] flex items-center justify-center gap-2"
-        >
-          💾 Tải PDF
-        </button>
+      <div className="space-y-2 pt-1">
+        <div className="flex gap-2">
+          <button
+            onClick={() => generatePDF('download')}
+            className="flex-1 py-2.5 bg-rose-800 hover:bg-rose-900 text-white text-xs font-bold rounded-2xl transition-all shadow-md active:scale-[0.98] flex items-center justify-center gap-1.5"
+          >
+            💾 Tải PDF Toa Thuốc
+          </button>
+          <button
+            onClick={handleDownloadQRImage}
+            className="flex-1 py-2.5 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 border border-slate-200 text-xs font-bold rounded-2xl transition-all shadow-xs active:scale-[0.98] flex items-center justify-center gap-1.5"
+          >
+            🖼️ Tải Ảnh Mã QR (PNG)
+          </button>
+        </div>
+
         <button
           onClick={() => generatePDF('print')}
-          className="flex-1 py-3 bg-rose-800 hover:bg-rose-900 text-white text-xs font-bold rounded-2xl transition-all shadow-md active:scale-[0.98] flex items-center justify-center gap-2"
+          className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-all flex items-center justify-center gap-1.5"
         >
           🖨️ In Toa Thuốc
         </button>

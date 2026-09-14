@@ -235,7 +235,29 @@ const PrescriptionPrototype = () => {
     setActiveTab('pharmacist');
   };
 
-  const prescriptionPublicUrl = `${window.location.origin}/prescription-prototype?tab=pharmacist`;
+  const prescriptionPublicUrl = `${window.location.origin}/prescription/public/demo_appointment_id`;
+
+  const handleDownloadQRImage = () => {
+    try {
+      const qrCanvas = document.getElementById('prototype-qr-canvas') ||
+                       (qrContainerRef.current ? qrContainerRef.current.querySelector('canvas') : null);
+      if (!qrCanvas) {
+        showToast('⚠️ Không tìm thấy canvas mã QR!');
+        return;
+      }
+      const dataUrl = qrCanvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = `QRCode_Prescription_${patientInfo.name.replace(/\s+/g, '_')}.png`;
+      link.href = dataUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      showToast('✓ Đã tải ảnh mã QR (PNG) thành công!');
+    } catch (err) {
+      console.error('Lỗi khi tải ảnh mã QR:', err);
+      showToast('⚠️ Lỗi khi xuất ảnh mã QR');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#f8f5f2] text-[#2d2522] font-sans pb-16 antialiased">
@@ -552,6 +574,15 @@ const PrescriptionPrototype = () => {
                   <Download className="w-3.5 h-3.5" />
                   <span>Tải lại PDF</span>
                 </button>
+                <button
+                  type="button"
+                  onClick={handleDownloadQRImage}
+                  className="flex-1 sm:flex-none px-4 py-2 bg-white hover:bg-[#f5ede8] text-[#2d2522] border border-[#ebdcd5] rounded-xl text-xs font-bold transition-all shadow-2xs flex items-center justify-center gap-1.5"
+                  title="Tải ảnh mã QR PNG"
+                >
+                  <QrCode className="w-3.5 h-3.5 text-[#d97251]" />
+                  <span>Tải ảnh QR</span>
+                </button>
               </div>
             </div>
 
@@ -584,14 +615,23 @@ const PrescriptionPrototype = () => {
 
                   <div className="bg-white rounded-2xl border border-[#ebdcd5] p-4 flex flex-col items-center justify-center shadow-xs space-y-2">
                     <QRCodeCanvas
+                      id="prototype-qr-canvas"
                       value={prescriptionPublicUrl}
-                      size={150}
+                      size={180}
                       level="H"
                       includeMargin={true}
                     />
                     <span className="text-[10px] font-bold text-[#8c7e77] uppercase tracking-wider">
                       Mã tra cứu: {patientInfo.id}
                     </span>
+                    <button
+                      type="button"
+                      onClick={handleDownloadQRImage}
+                      className="text-[10px] font-bold text-[#d97251] hover:underline flex items-center gap-1 pt-1"
+                    >
+                      <Download className="w-3 h-3" />
+                      <span>Tải file ảnh mã QR này</span>
+                    </button>
                   </div>
 
                   <div className="bg-white rounded-2xl border border-[#ebdcd5] p-4 space-y-3 shadow-xs">

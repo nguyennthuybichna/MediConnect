@@ -33,7 +33,13 @@ axiosClient.interceptors.response.use(
         localStorage.removeItem('token');
         localStorage.removeItem('user_id');
         localStorage.removeItem('user');
-        if (window.location.pathname !== '/login') {
+        const currentPath = window.location.pathname;
+        const isPublicPath = currentPath.startsWith('/prescription') ||
+                             currentPath === '/login' ||
+                             currentPath === '/register' ||
+                             currentPath === '/forgot-password' ||
+                             currentPath === '/verify-email';
+        if (!isPublicPath) {
           window.location.href = '/login?expired=true';
         }
       }

@@ -7,6 +7,7 @@ import Register from './pages/auth/Register';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import VerifyEmail from './pages/auth/VerifyEmail';
 import PrescriptionPrototype from './pages/PrescriptionPrototype';
+import PublicPrescription from './pages/PublicPrescription';
 
 import PatientDashboard from './pages/patient/PatientDashboard';
 import PatientProfile from './pages/patient/PatientProfile';
@@ -35,6 +36,13 @@ function App() {
           <Route path="/reset-password" element={<ForgotPassword />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/prescription-prototype" element={<PrescriptionPrototype />} />
+          
+          {/* Public Prescription Routes - No Login Required */}
+          <Route path="/prescription/public/:appointment_id" element={<PublicPrescription />} />
+          <Route path="/prescription/public" element={<PublicPrescription />} />
+          <Route path="/prescription/:appointment_id" element={<PublicPrescription />} />
+          <Route path="/prescription" element={<PublicPrescription />} />
+
 
           <Route path="/patient" element={<Navigate to="/patient/dashboard" replace />} />
           <Route path="/patient/dashboard" element={<ProtectedRoute allowedRoles={['patient']}><PatientDashboard /></ProtectedRoute>} />

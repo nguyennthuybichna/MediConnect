@@ -17,6 +17,11 @@ router.post('/api/auth/resend-verification', authController.resendVerification);
 router.post('/api/auth/forgot-password', authController.forgotPassword);
 router.post('/api/auth/reset-password', authController.resetPassword);
 
+// Public Prescription Lookup (No Authentication Required for QR Code Scanning)
+router.get('/api/public/prescription/:appointment_id', appointmentController.getPublicPrescription);
+router.get('/api/public/prescriptions/:appointment_id', appointmentController.getPublicPrescription);
+
+
 router.post(
   '/api/diagnosis',
   verifyToken,

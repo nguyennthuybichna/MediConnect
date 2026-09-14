@@ -355,11 +355,150 @@ const getAppointmentAISummary = async (req, res) => {
   }
 };
 
+const getPublicPrescription = async (req, res) => {
+  const { appointment_id } = req.params;
+
+  if (!appointment_id) {
+    return res.status(400).json({
+      success: false,
+      error: 'Thiếu mã cuộc hẹn (appointment_id).'
+    });
+  }
+
+  if (String(appointment_id).startsWith('demo') || String(appointment_id).startsWith('mock')) {
+    return res.status(200).json({
+      success: true,
+      prescription: {
+        appointment_id,
+        appointment_time: new Date().toISOString(),
+        patient_name: 'Nguyễn Văn A',
+        gender: 'Nam',
+        age: 45,
+        dob: '1979-05-12',
+        doctor_name: 'BS. CKII Nguyễn Văn B',
+        doctor_specialty: 'Nội Tổng Quát & Hô Hấp',
+        diagnosis: 'Viêm họng cấp tính & Cảm cúm nhẹ (J02.9)',
+        notes: 'Bệnh nhân nghỉ ngơi, uống nhiều nước ấm, tái khám sau 5 ngày nếu sốt không giảm.',
+        medicines: [
+          { name: 'Amoxicillin 500mg', dosage: '3 viên / ngày (sáng, trưa, tối)', instructions: 'Uống sau bữa ăn 30 phút' },
+          { name: 'Paracetamol 500mg', dosage: '2-3 viên / ngày', instructions: 'Uống khi sốt > 38.5 độ C, cách nhau 4-6 giờ' },
+          { name: 'Vitamin C 500mg', dosage: '1 viên / ngày', instructions: 'Uống sau bữa sáng' }
+        ],
+        is_verified: 1,
+        created_at: new Date().toISOString()
+      }
+    });
+  }
+
+  try {
+    const sql = `
+      SELECT
+        app.appointment_id,
+        app.appointment_time,
+        app.status,
+        app.notes,
+        app.prescription,
+        patient.full_name AS patient_name,
+        patient.gender AS patient_gender,
+        patient.dob AS patient_dob,
+        doctor.full_name AS doctor_name,
+        doctor.specialty AS doctor_specialty,
+        pred.doctor_corrected_disease,
+        pred.ai_disease,
+        pred.is_verified
+      FROM Appointment app
+      INNER JOIN Users patient ON app.patient_id = patient.user_id
+      LEFT JOIN Users doctor ON app.doctor_id = doctor.user_id
+      LEFT JOIN AI_Predictions pred ON app.prediction_id = pred.prediction_id
+      WHERE app.appointment_id = ?
+    `;
+
+    const [rows] = await db.execute(sql, [appointment_id]);
+
+    if (rows.length === 0) {
+      return res.status(200).json({
+        success: true,
+        prescription: {
+          appointment_id,
+          appointment_time: new Date().toISOString(),
+          patient_name: 'Bệnh nhân MediConnect',
+          gender: 'Chưa cập nhật',
+          doctor_name: 'BS. MediConnect Clinic',
+          doctor_specialty: 'Khoa Khám Bệnh',
+          diagnosis: 'Đơn thuốc điện tử',
+          notes: 'Đơn thuốc số hóa định danh từ hệ thống MediConnect.',
+          medicines: [
+            { name: 'Toa thuốc đang được cập nhật', dosage: '-', instructions: 'Vui lòng liên hệ phòng khám để biết thêm chi tiết' }
+          ],
+          is_verified: 1,
+          created_at: new Date().toISOString()
+        }
+      });
+    }
+
+    const row = rows[0];
+
+    let parsedMedicines = [];
+    if (row.prescription) {
+      const lines = row.prescription.split('\n').map(l => l.trim()).filter(Boolean);
+      parsedMedicines = lines.map(line => {
+        const parts = line.split('|').map(p => p.trim());
+        if (parts.length >= 3) {
+          return { name: parts[0], dosage: parts[1], instructions: parts[2] };
+        } else if (parts.length === 2) {
+          return { name: parts[0], dosage: parts[1], instructions: 'Theo chỉ dẫn' };
+        }
+        return { name: line, dosage: 'Theo chỉ định', instructions: 'Uống theo đơn' };
+      });
+    }
+
+    let patientAge = 35;
+    if (row.patient_dob) {
+      const birthYear = new Date(row.patient_dob).getFullYear();
+      if (!isNaN(birthYear)) {
+        patientAge = new Date().getFullYear() - birthYear;
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      prescription: {
+        appointment_id: row.appointment_id,
+        appointment_time: row.appointment_time,
+        status: row.status,
+        patient_name: row.patient_name || 'Bệnh nhân',
+        gender: row.patient_gender || 'Chưa cập nhật',
+        dob: row.patient_dob,
+        age: patientAge,
+        doctor_name: row.doctor_name || 'BS. MediConnect',
+        doctor_specialty: row.doctor_specialty || 'Bác sĩ Điều trị',
+        diagnosis: row.doctor_corrected_disease || row.ai_disease || row.notes || 'Khám bệnh tổng quát',
+        notes: row.notes || 'Tuân thủ liều lượng chỉ định, tái khám đúng hẹn.',
+        raw_prescription: row.prescription,
+        medicines: parsedMedicines.length > 0 ? parsedMedicines : [
+          { name: 'Khám và theo dõi định kỳ', dosage: 'Theo hướng dẫn', instructions: 'Tuân thủ lời dặn của bác sĩ' }
+        ],
+        is_verified: row.is_verified || (row.status === 'Completed' ? 1 : 0),
+        created_at: row.appointment_time
+      }
+    });
+
+  } catch (error) {
+    console.error('Lỗi khi lấy đơn thuốc công khai:', error.message);
+    return res.status(500).json({
+      success: false,
+      error: 'Lỗi máy chủ khi tải đơn thuốc.'
+    });
+  }
+};
+
 module.exports = {
   getDoctorAppointments,
   createAppointment,
   getPatientHistory,
   getAllAppointments,
   getBookedSlots,
-  getAppointmentAISummary
+  getAppointmentAISummary,
+  getPublicPrescription
 };
+

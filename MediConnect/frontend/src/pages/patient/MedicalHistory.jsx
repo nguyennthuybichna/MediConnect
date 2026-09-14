@@ -687,13 +687,25 @@ const MedicalHistory = () => {
               )}
             </div>
 
-            <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex justify-end shrink-0">
-              <button
-                onClick={() => setShowDetailModal(false)}
-                className="px-5 py-2.5 bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold rounded-xl transition-all shadow-sm active:scale-[0.98]"
-              >
-                Đóng
-              </button>
+            <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between shrink-0">
+              {activeTab === 'clinical' && selectedRecord && (
+                <a
+                  href={`/prescription/public/${selectedRecord.appointment_id || selectedRecord.id || 'demo_appointment_id'}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-[#843F2E] border border-rose-200 text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-1.5"
+                >
+                  📄 Xem Toa thuốc & Tải QR
+                </a>
+              )}
+              <div className="flex items-center gap-2 ml-auto">
+                <button
+                  onClick={() => setShowDetailModal(false)}
+                  className="px-5 py-2.5 bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold rounded-xl transition-all shadow-sm active:scale-[0.98]"
+                >
+                  Đóng
+                </button>
+              </div>
             </div>
           </div>
         </div>
