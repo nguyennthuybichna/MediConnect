@@ -21,6 +21,9 @@ router.post('/api/auth/reset-password', authController.resetPassword);
 router.get('/api/public/prescription/:appointment_id', appointmentController.getPublicPrescription);
 router.get('/api/public/prescriptions/:appointment_id', appointmentController.getPublicPrescription);
 
+// Public AI Diagnosis Preview (Stateless Demo on Landing Page)
+router.post('/api/public/diagnosis/preview', diagnosisController.previewDiagnosis);
+
 
 router.post(
   '/api/diagnosis',

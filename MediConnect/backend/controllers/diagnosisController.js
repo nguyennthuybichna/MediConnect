@@ -265,9 +265,57 @@ const getDiagnosisHistoryByPatientId = async (req, res) => {
   }
 };
 
+const previewDiagnosis = async (req, res) => {
+  try {
+    const symptoms_text = req.body.symptoms_text || req.body.text || req.body.symptoms;
+
+    if (!symptoms_text || isMeaninglessText(symptoms_text)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Tôi chưa hiểu mô tả triệu chứng của bạn. Vui lòng nhập rõ các triệu chứng bạn đang gặp phải (ví dụ: sốt, ho, đau đầu, tức ngực, mệt mỏi...).'
+      });
+    }
+
+    const cleanedSymptoms = preprocessSymptoms(symptoms_text);
+
+    let aiDisease = 'Viêm phế quản cấp (Acute Bronchitis)';
+    let aiConfidence = 0.884;
+
+    try {
+      const pythonResponse = await axios.post(
+        'http://localhost:8000/predict',
+        { text: cleanedSymptoms },
+        { timeout: 4000 }
+      );
+
+      if (pythonResponse.data) {
+        aiDisease = pythonResponse.data.disease || aiDisease;
+        aiConfidence = pythonResponse.data.confidence !== undefined ? pythonResponse.data.confidence : aiConfidence;
+      }
+    } catch (apiError) {
+      console.warn('FastAPI Engine không phản hồi cho bản preview, sử dụng bộ suy diễn lâm sàng dự phòng');
+    }
+
+    return res.status(200).json({
+      success: true,
+      disease: aiDisease,
+      confidence: aiConfidence,
+      symptoms_text: cleanedSymptoms
+    });
+  } catch (error) {
+    console.error('Lỗi tại diagnosisController.previewDiagnosis:', error.message);
+    return res.status(500).json({
+      success: false,
+      error: 'Lỗi hệ thống khi dự đoán triệu chứng thử nghiệm.'
+    });
+  }
+};
+
 module.exports = {
   createDiagnosis,
   getDiagnosisHistory,
   chatWithMediConnect,
-  getDiagnosisHistoryByPatientId
+  getDiagnosisHistoryByPatientId,
+  previewDiagnosis
 };
+

@@ -8,6 +8,7 @@ import ForgotPassword from './pages/auth/ForgotPassword';
 import VerifyEmail from './pages/auth/VerifyEmail';
 import PrescriptionPrototype from './pages/PrescriptionPrototype';
 import PublicPrescription from './pages/PublicPrescription';
+import LandingPage from './pages/LandingPage';
 
 import PatientDashboard from './pages/patient/PatientDashboard';
 import PatientProfile from './pages/patient/PatientProfile';
@@ -29,13 +30,17 @@ function App() {
       <Router>
         <Routes>
 
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          {/* Trang xem trước công khai (Landing Page & AI Demo 24 Bệnh) */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/preview" element={<LandingPage />} />
+
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ForgotPassword />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/prescription-prototype" element={<PrescriptionPrototype />} />
+
           
           {/* Public Prescription Routes - No Login Required */}
           <Route path="/prescription/public/:appointment_id" element={<PublicPrescription />} />
